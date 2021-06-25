@@ -60,7 +60,7 @@ export class PostMessageSentHandler {
         if (customFields) {
             const { disableInput, displayTyping } = customFields;
             if (disableInput === true && displayTyping !== true) {
-                await removeBotTypingListener(rid);
+                await removeBotTypingListener(this.modify, rid, DialogflowBotUsername);
             }
         }
 
@@ -86,8 +86,9 @@ export class PostMessageSentHandler {
         const { visitor: { token: visitorToken } } = room as ILivechatRoom;
 
         try {
-            await botTypingListener(rid, this.modify.getNotifier().typing({ id: rid, username: DialogflowBotUsername }));
-            response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, this.persistence, rid, text, DialogflowRequestType.MESSAGE));
+            await botTypingListener(this.modify, rid, DialogflowBotUsername);
+            response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, text, DialogflowRequestType.MESSAGE));
+
         } catch (error) {
             this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
 
@@ -113,7 +114,7 @@ export class PostMessageSentHandler {
         // synchronous handover check
         const { isFallback } = response;
         if (isFallback) {
-            await removeBotTypingListener(rid);
+            await removeBotTypingListener(this.modify, rid, DialogflowBotUsername);
             return incFallbackIntentAndSendResponse(this.read, this.modify, rid, createResponseMessage);
         }
 
@@ -139,14 +140,14 @@ export class PostMessageSentHandler {
         }
 
         if (removeTypingIndicator) {
-            await removeBotTypingListener(rid);
+            await this.removeBotTypingListener(rid);
         }
     }
 
     private async handleClosedByVisitor(rid: string) {
         const DialogflowEnableChatClosedByVisitorEvent: boolean = await getAppSettingValue(this.read, AppSetting.DialogflowEnableChatClosedByVisitorEvent);
         const DialogflowChatClosedByVisitorEventName: string = await getAppSettingValue(this.read, AppSetting.DialogflowChatClosedByVisitorEventName);
-        await removeBotTypingListener(rid);
+        await this.removeBotTypingListener(rid);
         if (DialogflowEnableChatClosedByVisitorEvent) {
             try {
                 let res: IDialogflowMessage;
@@ -158,5 +159,10 @@ export class PostMessageSentHandler {
                 this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
             }
         }
+    }
+
+    private async removeBotTypingListener(rid: string) {
+        const DialogflowBotUsername: string = await getAppSettingValue(this.read, AppSetting.DialogflowBotUsername);
+        await removeBotTypingListener(this.modify, rid, DialogflowBotUsername);
     }
 }

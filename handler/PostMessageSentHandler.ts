@@ -149,10 +149,11 @@ export class PostMessageSentHandler {
         await this.removeBotTypingListener(rid);
         if (DialogflowEnableChatClosedByVisitorEvent) {
             try {
+                const dialogFlowDefaultLanguage = await getAppSettingValue(this.read, AppSetting.DialogflowDefaultLanguage);
                 let res: IDialogflowMessage;
                 res = (await Dialogflow.sendRequest(this.http, this.read, this.modify, this.persistence, rid, {
                     name: DialogflowChatClosedByVisitorEventName,
-                    languageCode: LanguageCode.EN,
+                    languageCode: dialogFlowDefaultLanguage || LanguageCode.EN,
                 }, DialogflowRequestType.EVENT));
             } catch (error) {
                 this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);

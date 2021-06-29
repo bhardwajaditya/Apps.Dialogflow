@@ -23,6 +23,7 @@ class DialogflowClass {
                              request: IDialogflowEvent | string,
                              requestType: DialogflowRequestType): Promise<any> {
         const dialogFlowVersion = await getAppSettingValue(read, AppSetting.DialogflowVersion);
+        const dialogFlowDefaultLanguage = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
 
         const room = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
 
@@ -36,7 +37,7 @@ class DialogflowClass {
             const queryInput = {
                 ...requestType === DialogflowRequestType.EVENT && { event: { event: typeof request === 'string' ? request : request.name} },
                 ...requestType === DialogflowRequestType.MESSAGE && { text: { text: request }},
-                languageCode: data.custom_languageCode || LanguageCode.EN,
+                languageCode: data.custom_languageCode || dialogFlowDefaultLanguage || LanguageCode.EN,
             };
 
             const queryParams = {
@@ -63,7 +64,7 @@ class DialogflowClass {
 
             const queryInput = {
                 ...requestType === DialogflowRequestType.EVENT && { event: request },
-                ...requestType === DialogflowRequestType.MESSAGE && { text: { languageCode: LanguageCode.EN, text: request } },
+                ...requestType === DialogflowRequestType.MESSAGE && { text: { languageCode: dialogFlowDefaultLanguage || LanguageCode.EN, text: request } },
             };
 
             const httpRequestContent: IHttpRequest = createHttpRequest(
@@ -220,6 +221,7 @@ class DialogflowClass {
                             messages.push(quickReplies);
                         }
                     }
+                    console.log(customFields.mediaCardURL);
                     if (customFields) {
                         msgCustomFields.disableInput = !!customFields.disableInput;
                         msgCustomFields.disableInputMessage = customFields.disableInputMessage;

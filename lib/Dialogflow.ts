@@ -18,7 +18,6 @@ class DialogflowClass {
     public async sendRequest(http: IHttp,
                              read: IRead,
                              modify: IModify,
-                             persistence: IPersistence,
                              sessionId: string,
                              request: IDialogflowEvent | string,
                              requestType: DialogflowRequestType): Promise<any> {
@@ -28,15 +27,17 @@ class DialogflowClass {
 
         const serverURL = await this.getServerURL(read, modify, http, sessionId);
 
-        if (dialogFlowVersion === 'CX') {
+        const assoc = new RocketChatAssociationRecord(RocketChatAssociationModel.MISC, `SFLAIA-${sessionId}`);
+        const data = await retrieveDataByAssociation(read, assoc);
 
-            const assoc = new RocketChatAssociationRecord(RocketChatAssociationModel.MISC, `SFLAIA-${sessionId}`);
-            const data = await retrieveDataByAssociation(read, assoc);
+        const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
+
+        if (dialogFlowVersion === 'CX') {
 
             const queryInput = {
                 ...requestType === DialogflowRequestType.EVENT && { event: { event: typeof request === 'string' ? request : request.name} },
                 ...requestType === DialogflowRequestType.MESSAGE && { text: { text: request }},
-                languageCode: data.custom_languageCode || LanguageCode.EN,
+                languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
             };
 
             const queryParams = {
@@ -63,7 +64,12 @@ class DialogflowClass {
 
             const queryInput = {
                 ...requestType === DialogflowRequestType.EVENT && { event: request },
-                ...requestType === DialogflowRequestType.MESSAGE && { text: { languageCode: LanguageCode.EN, text: request } },
+                ...requestType === DialogflowRequestType.MESSAGE && { text:
+                    {
+                        languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
+                        text: request,
+                    },
+                },
             };
 
             const httpRequestContent: IHttpRequest = createHttpRequest(

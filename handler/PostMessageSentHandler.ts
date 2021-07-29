@@ -1,6 +1,7 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatMessage, ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
+import { RocketChatAssociationModel, RocketChatAssociationRecord } from '@rocket.chat/apps-engine/definition/metadata';
 import { RoomType } from '@rocket.chat/apps-engine/definition/rooms';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { DialogflowRequestType, IDialogflowMessage, IDialogflowQuickReplies, LanguageCode, Message } from '../enum/Dialogflow';
@@ -11,6 +12,7 @@ import { Dialogflow } from '../lib/Dialogflow';
 import { createDialogflowMessage, createMessage } from '../lib/Message';
 import { handlePayloadActions } from '../lib/payloadAction';
 import { handleParameters } from '../lib/responseParameters';
+import { retrieveDataByAssociation } from '../lib/retrieveDataByAssociation';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { getAppSettingValue } from '../lib/Settings';
 import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
@@ -37,14 +39,14 @@ export class PostMessageSentHandler {
                 return;
             }
             await this.modify.getScheduler().cancelJobByDataQuery({ sessionId: rid });
-            await this.handleClosedByVisitor(rid);
+            await this.handleClosedByVisitor(rid, this.read);
         }
 
         if (text === Message.CUSTOMER_IDEL_TIMEOUT) {
             if (roomCustomFields && roomCustomFields.isHandedOverFromDialogFlow === true) {
                 return;
             }
-            await this.handleClosedByVisitor(rid);
+            await this.handleClosedByVisitor(rid, this.read);
             await closeChat(this.modify, this.read, rid, this.persistence);
             return;
         }
@@ -87,7 +89,7 @@ export class PostMessageSentHandler {
 
         try {
             await botTypingListener(this.modify, rid, DialogflowBotUsername);
-            response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, this.persistence, rid, text, DialogflowRequestType.MESSAGE));
+            response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, text, DialogflowRequestType.MESSAGE));
         } catch (error) {
             this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
 
@@ -141,16 +143,21 @@ export class PostMessageSentHandler {
         }
     }
 
-    private async handleClosedByVisitor(rid: string) {
+    private async handleClosedByVisitor(rid: string, read: IRead) {
         const DialogflowEnableChatClosedByVisitorEvent: boolean = await getAppSettingValue(this.read, AppSetting.DialogflowEnableChatClosedByVisitorEvent);
         const DialogflowChatClosedByVisitorEventName: string = await getAppSettingValue(this.read, AppSetting.DialogflowChatClosedByVisitorEventName);
         await this.removeBotTypingListener(rid);
+
+        const assoc = new RocketChatAssociationRecord(RocketChatAssociationModel.MISC, `SFLAIA-${rid}`);
+        const data = await retrieveDataByAssociation(read, assoc);
         if (DialogflowEnableChatClosedByVisitorEvent) {
             try {
+                const defaultLanguageCode = await getAppSettingValue(this.read, AppSetting.DialogflowDefaultLanguage);
+
                 let res: IDialogflowMessage;
-                res = (await Dialogflow.sendRequest(this.http, this.read, this.modify, this.persistence, rid, {
+                res = (await Dialogflow.sendRequest(this.http, this.read, this.modify,  rid, {
                     name: DialogflowChatClosedByVisitorEventName,
-                    languageCode: LanguageCode.EN,
+                    languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
                 }, DialogflowRequestType.EVENT));
             } catch (error) {
                 this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);

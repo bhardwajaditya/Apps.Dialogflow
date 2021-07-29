@@ -7,6 +7,7 @@ export enum AppSetting {
     DialogflowClientEmail = 'dialogflow_client_email',
     DialogFlowPrivateKey = 'dialogflow_private_key',
     DialogflowEnvironment = 'dialogflow_environment',
+    DialogflowDefaultLanguage = 'dialogflow_default_language',
     DialogflowFallbackResponsesLimit = 'dialogflow_fallback_responses_limit',
     FallbackTargetDepartment = 'fallback_target_department',
     DialogflowHandoverMessage = 'dialogflow_handover_message',
@@ -121,6 +122,18 @@ export const settings: Array<ISetting> = [
         i18nLabel: 'dialogflow_cx_region',
         i18nDescription: 'dialogflow_cx_region_desc',
         required: false,
+    },
+    {
+        id: AppSetting.DialogflowDefaultLanguage,
+        public: true,
+        type: SettingType.SELECT,
+        packageValue: 'en',
+        i18nLabel: 'agent_version',
+        values: [
+            { key: 'en', i18nLabel: 'English' },
+            { key: 'pt-BR', i18nLabel: 'Portuguese - Brazil' },
+        ],
+        required: true,
     },
     {
         id: AppSetting.DialogflowFallbackResponsesLimit,

@@ -42,7 +42,6 @@ export const  handlePayloadActions = async (read: IRead,  modify: IModify, http:
                     const response: IDialogflowMessage = await Dialogflow.sendRequest(http,
                         read,
                         modify,
-                        persistence,
                         rid,
                         event,
                         DialogflowRequestType.EVENT);
@@ -90,7 +89,7 @@ const sendChangeLanguageEvent = async (read: IRead, modify: IModify, persis: IPe
     try {
 
         const event = { name: 'ChangeLanguage', languageCode, parameters:  {} };
-        const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, persis, rid, event, DialogflowRequestType.EVENT);
+        const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, rid, event, DialogflowRequestType.EVENT);
 
         await createDialogflowMessage(rid, read, modify, response);
       } catch (error) {

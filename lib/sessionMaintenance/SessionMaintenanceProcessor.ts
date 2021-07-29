@@ -1,10 +1,12 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
+import { RocketChatAssociationModel, RocketChatAssociationRecord } from '@rocket.chat/apps-engine/definition/metadata';
 import { IJobContext, IProcessor } from '@rocket.chat/apps-engine/definition/scheduler';
 import { AppSetting } from '../../config/Settings';
 import { DialogflowRequestType, LanguageCode } from '../../enum/Dialogflow';
 import { Dialogflow } from '../../lib/Dialogflow';
 import { getAppSettingValue } from '../../lib/Settings';
+import { retrieveDataByAssociation } from '../retrieveDataByAssociation';
 import { SessionMaintenanceOnceSchedule } from './SessionMaintenanceOnceSchedule';
 
 export class SessionMaintenanceProcessor implements IProcessor {
@@ -34,12 +36,17 @@ export class SessionMaintenanceProcessor implements IProcessor {
             return;
         }
 
+        const assoc = new RocketChatAssociationRecord(RocketChatAssociationModel.MISC, `SFLAIA-${jobContext.sessionId}`);
+        const data = await retrieveDataByAssociation(read, assoc);
+
+        const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
+
         try {
             const eventData = {
                 name: sessionMaintenanceEventName,
-                languageCode: LanguageCode.EN,
+                languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
             };
-            await Dialogflow.sendRequest(http, read, modify, persis, jobContext.sessionId, eventData, DialogflowRequestType.EVENT);
+            await Dialogflow.sendRequest(http, read, modify, jobContext.sessionId, eventData, DialogflowRequestType.EVENT);
         } catch (error) {
             // console.log(error);
         }

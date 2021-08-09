@@ -49,8 +49,6 @@ export const createDialogflowMessage = async (app: IApp, rid: string, read: IRea
                 elements,
             });
 
-            console.error(blocks);
-
             data.blocks = blocks;
         }
 

@@ -3,34 +3,67 @@ import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatMessage, ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { RoomType } from '@rocket.chat/apps-engine/definition/rooms';
 import { AppSetting, DefaultMessage } from '../config/Settings';
-import { DialogflowRequestType, IDialogflowMessage } from '../enum/Dialogflow';
+import { DialogflowRequestType, IDialogflowMessage, IDialogflowQuickReplies, LanguageCode, Message } from '../enum/Dialogflow';
+
 import { Logs } from '../enum/Logs';
+import { botTypingListener, removeBotTypingListener } from '../lib//BotTyping';
 import { Dialogflow } from '../lib/Dialogflow';
 import { createDialogflowMessage, createMessage } from '../lib/Message';
+import { handlePayloadActions } from '../lib/payloadAction';
+import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { getAppSettingValue } from '../lib/Settings';
-import { incFallbackIntent, resetFallbackIntent } from '../lib/SynchronousHandover';
+import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
+import { handleTimeout } from '../lib/Timeout';
 
 export class PostMessageSentHandler {
     constructor(private readonly app: IApp,
                 private readonly message: ILivechatMessage,
                 private readonly read: IRead,
                 private readonly http: IHttp,
-                private readonly persis: IPersistence,
-                private readonly modify: IModify) {}
+                private readonly persistence: IPersistence,
+                private readonly modify: IModify) { }
 
     public async run() {
-        const { text, editedAt, room, token, sender } = this.message;
+        const { text, editedAt, room, token, sender, customFields } = this.message;
         const livechatRoom = room as ILivechatRoom;
 
-        const { id: rid, type, servedBy, isOpen } = livechatRoom;
+        const { id: rid, type, servedBy, isOpen, customFields: roomCustomFields } = livechatRoom;
 
         const DialogflowBotUsername: string = await getAppSettingValue(this.read, AppSetting.DialogflowBotUsername);
+
+        if (text === Message.CLOSED_BY_VISITOR) {
+            if (roomCustomFields && roomCustomFields.isHandedOverFromDialogFlow === true) {
+                return;
+            }
+            await this.modify.getScheduler().cancelJobByDataQuery({ sessionId: rid });
+            await this.handleClosedByVisitor(rid);
+        }
+
+        if (text === Message.CUSTOMER_IDEL_TIMEOUT) {
+            if (roomCustomFields && roomCustomFields.isHandedOverFromDialogFlow === true) {
+                return;
+            }
+            await this.handleClosedByVisitor(rid);
+            await closeChat(this.modify, this.read, rid);
+            return;
+        }
 
         if (!type || type !== RoomType.LIVE_CHAT) {
             return;
         }
 
-        if (!isOpen || !token || editedAt || !text) {
+        if (!isOpen) {
+            return;
+        }
+
+        if (customFields) {
+            const { disableInput, displayTyping } = customFields;
+            if (disableInput === true && displayTyping !== true) {
+                await removeBotTypingListener(this.modify, rid, DialogflowBotUsername);
+            }
+        }
+
+        if (!text || editedAt) {
             return;
         }
 
@@ -38,38 +71,96 @@ export class PostMessageSentHandler {
             return;
         }
 
-        if (sender.username === DialogflowBotUsername) {
-            return;
-        }
-
         if (!text || (text && text.trim().length === 0)) {
             return;
         }
 
+        const { visitor } = room as ILivechatRoom;
+        const { token: visitorToken } = visitor;
+        await handleTimeout(this.app, this.message, this.read, this.http, this.persistence, this.modify, visitor);
+
+        if (sender.username === DialogflowBotUsername || sender.username !== visitor.username) {
+            return;
+        }
+
         let response: IDialogflowMessage;
+
         try {
+            await botTypingListener(this.modify, rid, DialogflowBotUsername);
             response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, text, DialogflowRequestType.MESSAGE));
         } catch (error) {
             this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
 
             const serviceUnavailable: string = await getAppSettingValue(this.read, AppSetting.DialogflowServiceUnavailableMessage);
-
             await createMessage(this.app,
                                 rid,
                                 this.read,
                                 this.modify,
                                 { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
 
+            updateRoomCustomFields(rid, { isChatBotFunctional: false }, this.read, this.modify);
+            const targetDepartment: string = await getAppSettingValue(this.read, AppSetting.FallbackTargetDepartment);
+            await performHandover(this.app, this.modify, this.read, rid, visitorToken, targetDepartment);
+
             return;
         }
 
-        await createDialogflowMessage(this.app, rid, this.read, this.modify, response);
+        handlePayloadActions(this.app, this.read, this.modify, this.http, rid, visitorToken, response);
+
+        const createResponseMessage = async () => await createDialogflowMessage(this.app, rid, this.read, this.modify, response);
 
         // synchronous handover check
         const { isFallback } = response;
         if (isFallback) {
-            return incFallbackIntent(this.app, this.read, this.modify, rid);
+            await removeBotTypingListener(this.modify, rid, DialogflowBotUsername);
+            return incFallbackIntentAndSendResponse(this.app, this.read, this.modify, rid, createResponseMessage);
         }
+
+        await createResponseMessage();
+        await this.handleBotTyping(rid, response);
+
         return resetFallbackIntent(this.read, this.modify, rid);
+    }
+
+    private async handleBotTyping(rid: string, dialogflowMessage: IDialogflowMessage) {
+        const { messages = [] } = dialogflowMessage;
+        let removeTypingIndicator = true;
+
+        for (const message of messages) {
+            const { customFields = null } = message as IDialogflowQuickReplies;
+
+            if (customFields) {
+                const { disableInput, displayTyping } = customFields;
+                if (disableInput === true && displayTyping === true) {
+                    removeTypingIndicator = false;
+                }
+            }
+        }
+
+        if (removeTypingIndicator) {
+            await this.removeBotTypingListener(rid);
+        }
+    }
+
+    private async handleClosedByVisitor(rid: string) {
+        const DialogflowEnableChatClosedByVisitorEvent: boolean = await getAppSettingValue(this.read, AppSetting.DialogflowEnableChatClosedByVisitorEvent);
+        const DialogflowChatClosedByVisitorEventName: string = await getAppSettingValue(this.read, AppSetting.DialogflowChatClosedByVisitorEventName);
+        await this.removeBotTypingListener(rid);
+        if (DialogflowEnableChatClosedByVisitorEvent) {
+            try {
+                let res: IDialogflowMessage;
+                res = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, {
+                    name: DialogflowChatClosedByVisitorEventName,
+                    languageCode: LanguageCode.EN,
+                }, DialogflowRequestType.EVENT));
+            } catch (error) {
+                this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
+            }
+        }
+    }
+
+    private async removeBotTypingListener(rid: string) {
+        const DialogflowBotUsername: string = await getAppSettingValue(this.read, AppSetting.DialogflowBotUsername);
+        await removeBotTypingListener(this.modify, rid, DialogflowBotUsername);
     }
 }

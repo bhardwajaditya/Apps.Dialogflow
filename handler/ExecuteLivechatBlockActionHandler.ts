@@ -28,7 +28,11 @@ export class ExecuteLivechatBlockActionHandler {
             }
 
             const DialogflowBotUsername: string = await getAppSettingValue(this.read, AppSetting.DialogflowBotUsername);
-            const { servedBy: { username = null } = {}, id: rid } = room as ILivechatRoom;
+            const { servedBy: { username = null } = {}, id: rid, isOpen, closedAt } = room as ILivechatRoom;
+
+            if (!isOpen || closedAt) {
+                return this.context.getInteractionResponder().errorResponse();
+            }
 
             if (!username || DialogflowBotUsername !== username) {
                 return this.context.getInteractionResponder().successResponse();
@@ -55,7 +59,7 @@ export class ExecuteLivechatBlockActionHandler {
                     break;
             }
 
-            const { value: hideQuickRepliesSetting } = await this.read.getEnvironmentReader().getSettings().getById(AppSetting.DialogflowHideQuickReplies);
+            const hideQuickRepliesSetting = await getAppSettingValue(this.read, AppSetting.DialogflowHideQuickReplies);
             if (hideQuickRepliesSetting) {
                 await deleteAllActionBlocks(this.modify, appUser, id);
             }

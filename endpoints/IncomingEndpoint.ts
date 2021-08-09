@@ -8,6 +8,7 @@ import { Logs } from '../enum/Logs';
 import { Dialogflow } from '../lib/Dialogflow';
 import { createHttpResponse } from '../lib/Http';
 import { createDialogflowMessage } from '../lib/Message';
+import { handlePayloadActions } from '../lib/payloadAction';
 import { closeChat, performHandover } from '../lib/Room';
 
 export class IncomingEndpoint extends ApiEndpoint {
@@ -34,6 +35,9 @@ export class IncomingEndpoint extends ApiEndpoint {
 
         const { action, sessionId } = endpointContent;
         if (!sessionId) { throw new Error(Logs.INVALID_SESSION_ID); }
+
+        logIncomingEndpointPayload(endpointContent);
+
         switch (action) {
             case EndpointActionNames.CLOSE_CHAT:
                 await closeChat(modify, read, sessionId);
@@ -51,7 +55,11 @@ export class IncomingEndpoint extends ApiEndpoint {
 
                 try {
                     const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, sessionId, event, DialogflowRequestType.EVENT);
+                    const livechatRoom = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
+                    if (!livechatRoom) { throw new Error(); }
+                    const { visitor: { token: vToken } } = livechatRoom;
                     await createDialogflowMessage(this.app, sessionId, read, modify, response);
+                    await handlePayloadActions(this.app, read, modify, http, sessionId, vToken, response);
                 } catch (error) {
                     this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
                     throw new Error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
@@ -67,3 +75,10 @@ export class IncomingEndpoint extends ApiEndpoint {
         }
     }
 }
+
+const logIncomingEndpointPayload = (endpointContent: IActionsEndpointContent) => {
+    if (endpointContent.action === EndpointActionNames.SEND_MESSAGE) {
+        return;
+    }
+    console.debug('Dialogflow Incoming Endpoint: ', JSON.stringify(endpointContent || {}));
+};

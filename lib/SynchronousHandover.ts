@@ -6,7 +6,7 @@ import { Logs } from '../enum/Logs';
 import { performHandover, updateRoomCustomFields } from './Room';
 import { getAppSettingValue } from './Settings';
 
-export const incFallbackIntent = async (app: IApp, read: IRead, modify: IModify, sessionId: string) => {
+export const incFallbackIntentAndSendResponse = async (app: IApp, read: IRead, modify: IModify, sessionId: string, dialogflowMessage?: () => any) => {
     const fallbackThreshold = (await getAppSettingValue(read, AppSetting.DialogflowFallbackResponsesLimit)) as number;
 
     if (!fallbackThreshold || (fallbackThreshold && fallbackThreshold === 0)) { return; }
@@ -27,7 +27,9 @@ export const incFallbackIntent = async (app: IApp, read: IRead, modify: IModify,
         const targetDepartmentName: string | undefined = await getAppSettingValue(read, AppSetting.FallbackTargetDepartment);
 
         // Session Id from Dialogflow will be the same as Room id
-        await performHandover(app, modify, read, sessionId, visitorToken, targetDepartmentName);
+        await performHandover(app, modify, read, sessionId, visitorToken, targetDepartmentName, dialogflowMessage);
+    } else if (dialogflowMessage) {
+        await dialogflowMessage();
     }
 };
 

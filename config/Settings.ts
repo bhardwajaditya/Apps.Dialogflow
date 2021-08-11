@@ -128,10 +128,10 @@ export const settings: Array<ISetting> = [
         public: true,
         type: SettingType.SELECT,
         packageValue: 'en',
-        i18nLabel: 'agent_version',
+        i18nLabel: 'dialogflow_default_language',
         values: [
-            { key: 'en', i18nLabel: 'English' },
-            { key: 'pt-BR', i18nLabel: 'Portuguese - Brazil' },
+            { key: 'en', i18nLabel: 'English (en)' },
+            { key: 'pt-BR', i18nLabel: 'Portuguese - Brazil (pt-BR)' },
         ],
         required: true,
     },

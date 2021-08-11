@@ -7,7 +7,7 @@ import { AppSetting } from '../config/Settings';
 import { DialogflowJWT, DialogflowRequestType, DialogflowUrl, IDialogflowAccessToken, IDialogflowCustomFields, IDialogflowEvent, IDialogflowMessage, IDialogflowPayload, IDialogflowQuickReplies, LanguageCode } from '../enum/Dialogflow';
 import { Headers } from '../enum/Http';
 import { Logs } from '../enum/Logs';
-import { base64urlEncode } from './Helper';
+import { base64urlEncode, getError } from './Helper';
 import { createHttpRequest } from './Http';
 import { retrieveDataByAssociation } from './retrieveDataByAssociation';
 import { updateRoomCustomFields } from './Room';
@@ -57,7 +57,8 @@ class DialogflowClass {
                 const response = await http.post(serverURL, httpRequestContent);
                 return await this.parseCXRequest(read, response.data);
             } catch (error) {
-                throw new Error(`${ Logs.HTTP_REQUEST_ERROR }`);
+                console.error(Logs.HTTP_REQUEST_ERROR, getError(error));
+                throw new Error(`${ Logs.HTTP_REQUEST_ERROR }: ${error}`);
             }
         } else {
 
@@ -75,7 +76,8 @@ class DialogflowClass {
                 const response = await http.post(serverURL, httpRequestContent);
                 return this.parseRequest(response.data);
             } catch (error) {
-                throw new Error(`${ Logs.HTTP_REQUEST_ERROR }`);
+                console.error(Logs.HTTP_REQUEST_ERROR, getError(error));
+                throw new Error(`${ Logs.HTTP_REQUEST_ERROR }: ${error}`);
             }
         }
     }
@@ -116,7 +118,8 @@ class DialogflowClass {
                 throw Error(Logs.ACCESS_TOKEN_ERROR);
             }
         } catch (error) {
-            throw new Error(Logs.HTTP_REQUEST_ERROR);
+            console.error(Logs.HTTP_REQUEST_ERROR, getError(error));
+            throw new Error(`${Logs.HTTP_REQUEST_ERROR}: ${error}`);
         }
     }
 
@@ -338,6 +341,7 @@ class DialogflowClass {
 
             return accessToken.token;
         } catch (error) {
+            console.error(Logs.ACCESS_TOKEN_ERROR, error);
             throw Error(Logs.ACCESS_TOKEN_ERROR + error);
         }
     }

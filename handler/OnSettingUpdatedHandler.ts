@@ -3,6 +3,7 @@ import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { AppSetting } from '../config/Settings';
 import { Logs } from '../enum/Logs';
 import { Dialogflow } from '../lib/Dialogflow';
+import { getError } from '../lib/Helper';
 import { getAppSettingValue } from '../lib/Settings';
 
 export class OnSettingUpdatedHandler {
@@ -24,6 +25,7 @@ export class OnSettingUpdatedHandler {
             await Dialogflow.generateNewAccessToken(this.http, clientEmail, privateKey);
             this.app.getLogger().info(Logs.GOOGLE_AUTH_SUCCESS);
         } catch (error) {
+            console.error(Logs.HTTP_REQUEST_ERROR, getError(error));
             this.app.getLogger().error(error.message);
         }
     }

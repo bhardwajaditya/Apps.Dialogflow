@@ -5,7 +5,7 @@ import { IRoom } from '@rocket.chat/apps-engine/definition/rooms';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { Logs } from '../enum/Logs';
 import { removeBotTypingListener } from '../lib//BotTyping';
-import { createMessage, sendCloseChatButton } from '../lib/Message';
+import { createMessage } from '../lib/Message';
 import { getAppSettingValue } from '../lib/Settings';
 
 export class OnAgentUnassignedHandler {
@@ -30,7 +30,7 @@ export class OnAgentUnassignedHandler {
         if (livechatRoom.servedBy.username === DialogflowBotUsername && allowChatBotSession === false) {
                 const offlineMessage: string = await getAppSettingValue(this.read, AppSetting.DialogflowServiceUnavailableMessage);
 
-                await createMessage(livechatRoom.id, this.read, this.modify,
+                await createMessage(this.app, livechatRoom.id, this.read, this.modify,
                     { text: offlineMessage ? offlineMessage : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
 
                 await closeChat(this.modify, this.read, rid);

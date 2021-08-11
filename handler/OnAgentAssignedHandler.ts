@@ -45,11 +45,11 @@ export class OnAgentAssignedHandler {
 
         if (sendWelcomeMessage) {
             const welcomeMessage: string = await getAppSettingValue(this.read, AppSetting.DialogflowWelcomeMessage);
-            await createMessage(rid, this.read, this.modify, { text: welcomeMessage || DefaultMessage.DEFAULT_DialogflowWelcomeMessage });
+            await createMessage(this.app, rid, this.read, this.modify, { text: welcomeMessage || DefaultMessage.DEFAULT_DialogflowWelcomeMessage });
         }
 
         await updateRoomCustomFields(rid, { welcomeEventSent: true }, this.read, this.modify);
 
-        await sendWelcomeEventToDialogFlow(this.read, this.modify, this.http, rid, visitorToken, livechatData);
+        await sendWelcomeEventToDialogFlow(this.app, this.read, this.modify, this.http, rid, visitorToken, livechatData);
     }
 }

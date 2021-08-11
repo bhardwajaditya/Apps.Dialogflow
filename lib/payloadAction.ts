@@ -1,13 +1,12 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
-import { RocketChatAssociationModel, RocketChatAssociationRecord } from '@rocket.chat/apps-engine/definition/metadata';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { ActionIds } from '../enum/ActionIds';
 import {  DialogflowRequestType, IDialogflowAction, IDialogflowMessage, IDialogflowPayload} from '../enum/Dialogflow';
+import { retrieveDataByAssociation, RoomAssoc } from '../lib/Persistence';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { getAppSettingValue } from '../lib/Settings';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
-import { retrieveDataByAssociation } from './retrieveDataByAssociation';
 
 export const  handlePayloadActions = async (read: IRead,  modify: IModify, http: IHttp, persistence: IPersistence, rid: string, visitorToken: string, dialogflowMessage: IDialogflowMessage) => {
     const { messages = [] } = dialogflowMessage;
@@ -67,7 +66,7 @@ export const  handlePayloadActions = async (read: IRead,  modify: IModify, http:
                     }
 
                 } else if (actionName === ActionIds.CHANGE_LANGUAGE_CODE) {
-                    const assoc = new RocketChatAssociationRecord(RocketChatAssociationModel.MISC, `SFLAIA-${rid}`);
+                    const assoc = RoomAssoc(rid);
                     const data = await retrieveDataByAssociation(read, assoc);
 
                     if (data && data.custom_languageCode) {

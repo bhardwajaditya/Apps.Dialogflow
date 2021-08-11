@@ -1,14 +1,13 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatEventContext, ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
-import { RocketChatAssociationModel, RocketChatAssociationRecord } from '@rocket.chat/apps-engine/definition/metadata';
 import { RoomType } from '@rocket.chat/apps-engine/definition/rooms';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { DialogflowRequestType, IDialogflowMessage } from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
 import { Dialogflow } from '../lib/Dialogflow';
 import { createDialogflowMessage, createMessage } from '../lib/Message';
-import { retrieveDataByAssociation } from '../lib/retrieveDataByAssociation';
+import { retrieveDataByAssociation, RoomAssoc } from '../lib/Persistence';
 import { updateRoomCustomFields } from '../lib/Room';
 import { getAppSettingValue } from '../lib/Settings';
 
@@ -54,8 +53,7 @@ export class OnAgentAssignedHandler {
 
         await updateRoomCustomFields(rid, { welcomeEventSent: true }, this.read, this.modify);
 
-        const assoc = new RocketChatAssociationRecord(RocketChatAssociationModel.MISC, `SFLAIA-${rid}`);
-        const data = await retrieveDataByAssociation(this.read, assoc);
+        const data = await retrieveDataByAssociation(this.read, RoomAssoc(rid));
 
         const defaultLanguageCode = await getAppSettingValue(this.read, AppSetting.DialogflowDefaultLanguage);
 

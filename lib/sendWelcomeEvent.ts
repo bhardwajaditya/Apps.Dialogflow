@@ -1,6 +1,6 @@
 import { IHttp, IModify, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { AppSetting, DefaultMessage } from '../config/Settings';
-import { DialogflowRequestType, IDialogflowCustomFields, IDialogflowMessage } from '../enum/Dialogflow';
+import { DialogflowRequestType, IDialogflowCustomFields, IDialogflowMessage, LanguageCode } from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
@@ -14,7 +14,7 @@ export const sendWelcomeEventToDialogFlow = async (read: IRead,  modify: IModify
         const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
 
         const event = { name: 'Welcome',
-            languageCode: data.custom_languageCode || defaultLanguageCode || 'en',
+            languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
             parameters: {...(livechatData || {}),
             roomId: rid, visitorToken} || {},
         };

@@ -1,4 +1,6 @@
 import { ISetting, SettingType } from '@rocket.chat/apps-engine/definition/settings';
+import { LanguageCode } from '../enum/Dialogflow';
+
 export enum AppSetting {
     DialogflowBotUsername = 'dialogflow_bot_username',
     DialogflowBotId = 'dialogflow_bot_id',
@@ -127,11 +129,11 @@ export const settings: Array<ISetting> = [
         id: AppSetting.DialogflowDefaultLanguage,
         public: true,
         type: SettingType.SELECT,
-        packageValue: 'en',
+        packageValue: LanguageCode.EN,
         i18nLabel: 'dialogflow_default_language',
         values: [
-            { key: 'en', i18nLabel: 'English (en)' },
-            { key: 'pt-BR', i18nLabel: 'Portuguese - Brazil (pt-BR)' },
+            { key: LanguageCode.EN, i18nLabel: 'English (en)' },
+            { key: LanguageCode.PTBR, i18nLabel: 'Portuguese - Brazil (pt-BR)' },
         ],
         required: true,
     },

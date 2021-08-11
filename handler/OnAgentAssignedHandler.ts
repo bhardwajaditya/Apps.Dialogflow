@@ -3,7 +3,7 @@ import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatEventContext, ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { RoomType } from '@rocket.chat/apps-engine/definition/rooms';
 import { AppSetting, DefaultMessage } from '../config/Settings';
-import { DialogflowRequestType, IDialogflowMessage } from '../enum/Dialogflow';
+import { DialogflowRequestType, IDialogflowMessage, LanguageCode } from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
 import { Dialogflow } from '../lib/Dialogflow';
 import { createDialogflowMessage, createMessage } from '../lib/Message';
@@ -60,7 +60,7 @@ export class OnAgentAssignedHandler {
         try {
             const event = {
                 name: 'Welcome',
-                languageCode: data.custom_languageCode || defaultLanguageCode || 'en',
+                languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
                 parameters: {...livechatData, roomId: rid, visitorToken} || {},
             };
             const response: IDialogflowMessage = await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, event, DialogflowRequestType.EVENT);

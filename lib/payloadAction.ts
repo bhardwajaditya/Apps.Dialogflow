@@ -1,7 +1,7 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { ActionIds } from '../enum/ActionIds';
-import {  DialogflowRequestType, IDialogflowAction, IDialogflowMessage, IDialogflowPayload} from '../enum/Dialogflow';
+import {  DialogflowRequestType, IDialogflowAction, IDialogflowMessage, IDialogflowPayload, LanguageCode} from '../enum/Dialogflow';
 import { retrieveDataByAssociation, RoomAssoc } from '../lib/Persistence';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { getAppSettingValue } from '../lib/Settings';
@@ -37,7 +37,7 @@ export const  handlePayloadActions = async (read: IRead,  modify: IModify, http:
                     await closeChat(modify, read, rid, persistence);
                 } else if (actionName === ActionIds.SET_TIMEOUT) {
 
-                    const event = { name: params.eventName, languageCode: 'en', parameters: {} };
+                    const event = { name: params.eventName, languageCode: LanguageCode.EN, parameters: {} };
                     const response: IDialogflowMessage = await Dialogflow.sendRequest(http,
                         read,
                         modify,

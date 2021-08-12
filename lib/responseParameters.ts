@@ -1,7 +1,7 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import {  DialogflowRequestType, IDialogflowMessage} from '../enum/Dialogflow';
-import { retrieveDataByAssociation, RoomAssoc } from '../lib/Persistence';
+import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { getAppSettingValue } from '../lib/Settings';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
@@ -11,7 +11,7 @@ export const  handleParameters = async (read: IRead,  modify: IModify, persisten
 
     if (parameters.custom_languagecode) {
 
-        const assoc = RoomAssoc(rid);
+        const assoc = getRoomAssoc(rid);
         const data = await retrieveDataByAssociation(read, assoc);
 
         if (data && data.custom_languageCode) {

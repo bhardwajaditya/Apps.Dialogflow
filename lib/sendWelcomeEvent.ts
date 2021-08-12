@@ -4,12 +4,12 @@ import { DialogflowRequestType, IDialogflowCustomFields, IDialogflowMessage, Lan
 import { Logs } from '../enum/Logs';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
-import { retrieveDataByAssociation, RoomAssoc } from './Persistence';
+import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
 import { getAppSettingValue } from './Settings';
 
 export const sendWelcomeEventToDialogFlow = async (read: IRead,  modify: IModify, http: IHttp, rid: string, visitorToken: string, livechatData: any) => {
     try {
-        const data = await retrieveDataByAssociation(read, RoomAssoc(rid));
+        const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
 
         const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
 

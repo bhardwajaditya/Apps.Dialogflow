@@ -8,7 +8,7 @@ import { Headers } from '../enum/Http';
 import { Logs } from '../enum/Logs';
 import { base64urlEncode } from './Helper';
 import { createHttpRequest } from './Http';
-import { retrieveDataByAssociation, RoomAssoc } from './Persistence';
+import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
 import { updateRoomCustomFields } from './Room';
 import { getAppSettingValue } from './Settings';
 
@@ -26,7 +26,7 @@ class DialogflowClass {
 
         const serverURL = await this.getServerURL(read, modify, http, sessionId);
 
-        const data = await retrieveDataByAssociation(read, RoomAssoc(sessionId));
+        const data = await retrieveDataByAssociation(read, getRoomAssoc(sessionId));
 
         const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
 

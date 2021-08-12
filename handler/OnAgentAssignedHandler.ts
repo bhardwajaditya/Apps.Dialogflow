@@ -7,7 +7,7 @@ import { DialogflowRequestType, IDialogflowMessage, LanguageCode } from '../enum
 import { Logs } from '../enum/Logs';
 import { Dialogflow } from '../lib/Dialogflow';
 import { createDialogflowMessage, createMessage } from '../lib/Message';
-import { retrieveDataByAssociation, RoomAssoc } from '../lib/Persistence';
+import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { updateRoomCustomFields } from '../lib/Room';
 import { getAppSettingValue } from '../lib/Settings';
 
@@ -53,7 +53,7 @@ export class OnAgentAssignedHandler {
 
         await updateRoomCustomFields(rid, { welcomeEventSent: true }, this.read, this.modify);
 
-        const data = await retrieveDataByAssociation(this.read, RoomAssoc(rid));
+        const data = await retrieveDataByAssociation(this.read, getRoomAssoc(rid));
 
         const defaultLanguageCode = await getAppSettingValue(this.read, AppSetting.DialogflowDefaultLanguage);
 

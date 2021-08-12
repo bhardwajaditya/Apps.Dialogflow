@@ -6,6 +6,7 @@ import { AppSetting, DefaultMessage } from '../config/Settings';
 import { DialogflowRequestType, IDialogflowMessage } from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
 import { Dialogflow } from '../lib/Dialogflow';
+import { getError } from '../lib/Helper';
 import { createDialogflowMessage, createMessage } from '../lib/Message';
 import { updateRoomCustomFields } from '../lib/Room';
 import { getAppSettingValue } from '../lib/Settings';
@@ -58,6 +59,7 @@ export class OnAgentAssignedHandler {
 
             await createDialogflowMessage(rid, this.read, this.modify, response);
           } catch (error) {
+            console.error(Logs.HTTP_REQUEST_ERROR, getError(error));
             this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
 
             const serviceUnavailable: string = await getAppSettingValue(this.read, AppSetting.DialogflowServiceUnavailableMessage);

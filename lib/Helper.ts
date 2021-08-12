@@ -1,5 +1,12 @@
 import { Base64 } from '../enum/Dialogflow';
 
+export const getError = (error: any) => {
+    if (typeof error === 'object') {
+        return JSON.stringify(error);
+    }
+    return error;
+};
+
 export const base64urlEncode = (str: any) => {
     const utf8str = unescape(encodeURIComponent(str));
     return base64EncodeData(utf8str, utf8str.length, Base64.BASE64_DICTIONARY, Base64.BASE64_PAD);

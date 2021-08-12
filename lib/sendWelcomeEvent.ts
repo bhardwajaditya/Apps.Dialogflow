@@ -1,14 +1,23 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { AppSetting, DefaultMessage } from '../config/Settings';
-import { DialogflowRequestType, IDialogflowCustomFields, IDialogflowMessage } from '../enum/Dialogflow';
+import { DialogflowRequestType, IDialogflowCustomFields, IDialogflowMessage, LanguageCode } from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
+import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
 import { getAppSettingValue } from './Settings';
 
 export const sendWelcomeEventToDialogFlow = async (read: IRead,  modify: IModify, persistence: IPersistence, http: IHttp, rid: string, visitorToken: string, livechatData: any) => {
     try {
-        const event = { name: 'Welcome', languageCode: 'en', parameters: {...(livechatData || {}), roomId: rid, visitorToken} || {} };
+        const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
+
+        const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
+
+        const event = { name: 'Welcome',
+            languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
+            parameters: {...(livechatData || {}),
+            roomId: rid, visitorToken} || {},
+        };
         const disableInput: IDialogflowCustomFields = {
             disableInput: true,
             disableInputMessage: 'Starting chat...',

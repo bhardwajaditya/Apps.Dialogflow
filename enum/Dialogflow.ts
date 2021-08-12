@@ -80,7 +80,7 @@ export enum Base64 {
 
 export enum LanguageCode {
     EN = 'en',
-    BR = 'pt-BR',
+    PTBR = 'pt-BR',
 }
 
 export enum DialogflowRequestType {

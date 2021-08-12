@@ -4,6 +4,7 @@ import { IJobContext, IProcessor } from '@rocket.chat/apps-engine/definition/sch
 import { AppSetting } from '../../config/Settings';
 import { DialogflowRequestType, LanguageCode } from '../../enum/Dialogflow';
 import { Dialogflow } from '../../lib/Dialogflow';
+import { getRoomAssoc, retrieveDataByAssociation } from '../../lib/Persistence';
 import { getAppSettingValue } from '../../lib/Settings';
 import { SessionMaintenanceOnceSchedule } from './SessionMaintenanceOnceSchedule';
 
@@ -34,12 +35,16 @@ export class SessionMaintenanceProcessor implements IProcessor {
             return;
         }
 
+        const data = await retrieveDataByAssociation(read, getRoomAssoc(jobContext.sessionId));
+
+        const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
+
         try {
             const eventData = {
                 name: sessionMaintenanceEventName,
-                languageCode: LanguageCode.EN,
+                languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
             };
-            await Dialogflow.sendRequest(http, read, modify, persis, jobContext.sessionId, eventData, DialogflowRequestType.EVENT);
+            await Dialogflow.sendRequest(http, read, modify, jobContext.sessionId, eventData, DialogflowRequestType.EVENT);
         } catch (error) {
             // console.log(error);
         }

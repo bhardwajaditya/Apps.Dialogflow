@@ -1,18 +1,17 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
-import { RocketChatAssociationModel, RocketChatAssociationRecord } from '@rocket.chat/apps-engine/definition/metadata';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import {  DialogflowRequestType, IDialogflowMessage} from '../enum/Dialogflow';
+import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { getAppSettingValue } from '../lib/Settings';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
-import { retrieveDataByAssociation } from './retrieveDataByAssociation';
 
 export const  handleParameters = async (read: IRead,  modify: IModify, persistence: IPersistence, http: IHttp, rid: string, visitorToken: string, dialogflowMessage: IDialogflowMessage) => {
     const { parameters = [] } = dialogflowMessage;
 
     if (parameters.custom_languagecode) {
 
-        const assoc = new RocketChatAssociationRecord(RocketChatAssociationModel.MISC, `SFLAIA-${rid}`);
+        const assoc = getRoomAssoc(rid);
         const data = await retrieveDataByAssociation(read, assoc);
 
         if (data && data.custom_languageCode) {
@@ -32,7 +31,7 @@ const sendChangeLanguageEvent = async (read: IRead, modify: IModify, persis: IPe
     try {
 
         const event = { name: 'ChangeLanguage', languageCode, parameters:  {} };
-        const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, persis, rid, event, DialogflowRequestType.EVENT);
+        const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, rid, event, DialogflowRequestType.EVENT);
 
         await createDialogflowMessage(rid, read, modify, response);
       } catch (error) {

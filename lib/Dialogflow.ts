@@ -1,6 +1,5 @@
 import { IHttp, IHttpRequest, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat/ILivechatRoom';
-import { RocketChatAssociationModel, RocketChatAssociationRecord } from '@rocket.chat/apps-engine/definition/metadata';
 import { IRoom } from '@rocket.chat/apps-engine/definition/rooms';
 import { createSign } from 'crypto';
 import { AppSetting } from '../config/Settings';
@@ -9,7 +8,7 @@ import { Headers } from '../enum/Http';
 import { Logs } from '../enum/Logs';
 import { base64urlEncode, getError } from './Helper';
 import { createHttpRequest } from './Http';
-import { retrieveDataByAssociation } from './retrieveDataByAssociation';
+import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
 import { updateRoomCustomFields } from './Room';
 import { getAppSettingValue } from './Settings';
 
@@ -18,7 +17,6 @@ class DialogflowClass {
     public async sendRequest(http: IHttp,
                              read: IRead,
                              modify: IModify,
-                             persistence: IPersistence,
                              sessionId: string,
                              request: IDialogflowEvent | string,
                              requestType: DialogflowRequestType): Promise<any> {
@@ -28,15 +26,16 @@ class DialogflowClass {
 
         const serverURL = await this.getServerURL(read, modify, http, sessionId);
 
-        if (dialogFlowVersion === 'CX') {
+        const data = await retrieveDataByAssociation(read, getRoomAssoc(sessionId));
 
-            const assoc = new RocketChatAssociationRecord(RocketChatAssociationModel.MISC, `SFLAIA-${sessionId}`);
-            const data = await retrieveDataByAssociation(read, assoc);
+        const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
+
+        if (dialogFlowVersion === 'CX') {
 
             const queryInput = {
                 ...requestType === DialogflowRequestType.EVENT && { event: { event: typeof request === 'string' ? request : request.name} },
                 ...requestType === DialogflowRequestType.MESSAGE && { text: { text: request }},
-                languageCode: data.custom_languageCode || LanguageCode.EN,
+                languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
             };
 
             const queryParams = {
@@ -64,7 +63,12 @@ class DialogflowClass {
 
             const queryInput = {
                 ...requestType === DialogflowRequestType.EVENT && { event: request },
-                ...requestType === DialogflowRequestType.MESSAGE && { text: { languageCode: LanguageCode.EN, text: request } },
+                ...requestType === DialogflowRequestType.MESSAGE && { text:
+                    {
+                        languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
+                        text: request,
+                    },
+                },
             };
 
             const httpRequestContent: IHttpRequest = createHttpRequest(

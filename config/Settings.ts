@@ -1,4 +1,6 @@
 import { ISetting, SettingType } from '@rocket.chat/apps-engine/definition/settings';
+import { LanguageCode } from '../enum/Dialogflow';
+
 export enum AppSetting {
     DialogflowBotUsername = 'dialogflow_bot_username',
     DialogflowBotId = 'dialogflow_bot_id',
@@ -7,6 +9,7 @@ export enum AppSetting {
     DialogflowClientEmail = 'dialogflow_client_email',
     DialogFlowPrivateKey = 'dialogflow_private_key',
     DialogflowEnvironment = 'dialogflow_environment',
+    DialogflowDefaultLanguage = 'dialogflow_default_language',
     DialogflowFallbackResponsesLimit = 'dialogflow_fallback_responses_limit',
     FallbackTargetDepartment = 'fallback_target_department',
     DialogflowHandoverMessage = 'dialogflow_handover_message',
@@ -121,6 +124,18 @@ export const settings: Array<ISetting> = [
         i18nLabel: 'dialogflow_cx_region',
         i18nDescription: 'dialogflow_cx_region_desc',
         required: false,
+    },
+    {
+        id: AppSetting.DialogflowDefaultLanguage,
+        public: true,
+        type: SettingType.SELECT,
+        packageValue: LanguageCode.EN,
+        i18nLabel: 'dialogflow_default_language',
+        values: [
+            { key: LanguageCode.EN, i18nLabel: 'English (en)' },
+            { key: LanguageCode.PTBR, i18nLabel: 'Portuguese - Brazil (pt-BR)' },
+        ],
+        required: true,
     },
     {
         id: AppSetting.DialogflowFallbackResponsesLimit,

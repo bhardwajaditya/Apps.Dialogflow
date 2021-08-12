@@ -10,6 +10,7 @@ import { botTypingListener, removeBotTypingListener } from '../lib//BotTyping';
 import { Dialogflow } from '../lib/Dialogflow';
 import { createDialogflowMessage, createMessage } from '../lib/Message';
 import { handlePayloadActions } from '../lib/payloadAction';
+import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { getAppSettingValue } from '../lib/Settings';
@@ -37,14 +38,14 @@ export class PostMessageSentHandler {
                 return;
             }
             await this.modify.getScheduler().cancelJobByDataQuery({ sessionId: rid });
-            await this.handleClosedByVisitor(rid);
+            await this.handleClosedByVisitor(rid, this.read);
         }
 
         if (text === Message.CUSTOMER_IDEL_TIMEOUT) {
             if (roomCustomFields && roomCustomFields.isHandedOverFromDialogFlow === true) {
                 return;
             }
-            await this.handleClosedByVisitor(rid);
+            await this.handleClosedByVisitor(rid, this.read);
             await closeChat(this.modify, this.read, rid, this.persistence);
             return;
         }
@@ -87,7 +88,7 @@ export class PostMessageSentHandler {
 
         try {
             await botTypingListener(this.modify, rid, DialogflowBotUsername);
-            response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, this.persistence, rid, text, DialogflowRequestType.MESSAGE));
+            response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, text, DialogflowRequestType.MESSAGE));
         } catch (error) {
             this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
 
@@ -141,16 +142,20 @@ export class PostMessageSentHandler {
         }
     }
 
-    private async handleClosedByVisitor(rid: string) {
+    private async handleClosedByVisitor(rid: string, read: IRead) {
         const DialogflowEnableChatClosedByVisitorEvent: boolean = await getAppSettingValue(this.read, AppSetting.DialogflowEnableChatClosedByVisitorEvent);
         const DialogflowChatClosedByVisitorEventName: string = await getAppSettingValue(this.read, AppSetting.DialogflowChatClosedByVisitorEventName);
         await this.removeBotTypingListener(rid);
+
+        const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
         if (DialogflowEnableChatClosedByVisitorEvent) {
             try {
+                const defaultLanguageCode = await getAppSettingValue(this.read, AppSetting.DialogflowDefaultLanguage);
+
                 let res: IDialogflowMessage;
-                res = (await Dialogflow.sendRequest(this.http, this.read, this.modify, this.persistence, rid, {
+                res = (await Dialogflow.sendRequest(this.http, this.read, this.modify,  rid, {
                     name: DialogflowChatClosedByVisitorEventName,
-                    languageCode: LanguageCode.EN,
+                    languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
                 }, DialogflowRequestType.EVENT));
             } catch (error) {
                 this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);

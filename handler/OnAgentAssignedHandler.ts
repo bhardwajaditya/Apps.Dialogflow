@@ -3,11 +3,12 @@ import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatEventContext, ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { RoomType } from '@rocket.chat/apps-engine/definition/rooms';
 import { AppSetting, DefaultMessage } from '../config/Settings';
-import { DialogflowRequestType, IDialogflowMessage } from '../enum/Dialogflow';
+import { DialogflowRequestType, IDialogflowMessage, LanguageCode } from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
 import { Dialogflow } from '../lib/Dialogflow';
 import { getError } from '../lib/Helper';
 import { createDialogflowMessage, createMessage } from '../lib/Message';
+import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { updateRoomCustomFields } from '../lib/Room';
 import { getAppSettingValue } from '../lib/Settings';
 
@@ -53,9 +54,17 @@ export class OnAgentAssignedHandler {
 
         await updateRoomCustomFields(rid, { welcomeEventSent: true }, this.read, this.modify);
 
+        const data = await retrieveDataByAssociation(this.read, getRoomAssoc(rid));
+
+        const defaultLanguageCode = await getAppSettingValue(this.read, AppSetting.DialogflowDefaultLanguage);
+
         try {
-            const event = { name: 'Welcome', languageCode: 'en', parameters: {...livechatData, roomId: rid, visitorToken} || {} };
-            const response: IDialogflowMessage = await Dialogflow.sendRequest(this.http, this.read, this.modify, this.persis, rid, event, DialogflowRequestType.EVENT);
+            const event = {
+                name: 'Welcome',
+                languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
+                parameters: {...livechatData, roomId: rid, visitorToken} || {},
+            };
+            const response: IDialogflowMessage = await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, event, DialogflowRequestType.EVENT);
 
             await createDialogflowMessage(rid, this.read, this.modify, response);
           } catch (error) {

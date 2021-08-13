@@ -3,6 +3,7 @@ import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatEventContext, ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { RoomType } from '@rocket.chat/apps-engine/definition/rooms';
 import { AppSetting, DefaultMessage } from '../config/Settings';
+import { IDialogflowCustomFields } from '../enum/Dialogflow';
 import { createMessage } from '../lib/Message';
 import { updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
@@ -44,8 +45,17 @@ export class OnAgentAssignedHandler {
         }
 
         if (sendWelcomeMessage) {
+            const disableInput: IDialogflowCustomFields = {
+                disableInput: true,
+                disableInputMessage: 'Starting chat...',
+                displayTyping: true,
+            };
             const welcomeMessage: string = await getAppSettingValue(this.read, AppSetting.DialogflowWelcomeMessage);
-            await createMessage(this.app, rid, this.read, this.modify, { text: welcomeMessage || DefaultMessage.DEFAULT_DialogflowWelcomeMessage });
+            await createMessage(this.app, rid, this.read, this.modify, 
+                {
+                    text: welcomeMessage || DefaultMessage.DEFAULT_DialogflowWelcomeMessage,
+                    customFields: disableInput,
+                });
         }
 
         await updateRoomCustomFields(rid, { welcomeEventSent: true }, this.read, this.modify);

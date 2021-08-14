@@ -1,4 +1,5 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
+import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { DialogflowRequestType, IDialogflowCustomFields, IDialogflowMessage, LanguageCode } from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
@@ -7,7 +8,7 @@ import { createDialogflowMessage, createMessage } from './Message';
 import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
 import { getAppSettingValue } from './Settings';
 
-export const sendWelcomeEventToDialogFlow = async (read: IRead,  modify: IModify, persistence: IPersistence, http: IHttp, rid: string, visitorToken: string, livechatData: any) => {
+export const sendWelcomeEventToDialogFlow = async (app: IApp, read: IRead,  modify: IModify, persistence: IPersistence, http: IHttp, rid: string, visitorToken: string, livechatData: any) => {
     try {
         const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
 
@@ -23,13 +24,14 @@ export const sendWelcomeEventToDialogFlow = async (read: IRead,  modify: IModify
             disableInputMessage: 'Starting chat...',
             displayTyping: true,
         };
-        await createMessage(rid, read, modify, { customFields: disableInput });
-        const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, persistence, rid, event, DialogflowRequestType.EVENT);
-        await createDialogflowMessage(rid, read, modify, response);
+        await createMessage(app, rid, read, modify, { customFields: disableInput });
+        const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, rid, event, DialogflowRequestType.EVENT);
+        await createDialogflowMessage(app, rid, read, modify, response);
     } catch (error) {
         console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
         const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
-        await createMessage(rid, read, modify, { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
+        await createMessage(app, rid, read, modify,
+            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
         return;
     }
 };

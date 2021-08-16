@@ -11,19 +11,18 @@ import { getAppSettingValue } from './Settings';
 export const sendWelcomeEventToDialogFlow = async (app: IApp, read: IRead,  modify: IModify, persistence: IPersistence, http: IHttp, rid: string, visitorToken: string, livechatData: any) => {
     try {
         const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
-
         const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
-
-        const event = { name: 'Welcome',
+        const event = {
+            name: 'Welcome',
             languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
-            parameters: {...(livechatData || {}),
-            roomId: rid, visitorToken} || {},
+            parameters: {...(livechatData || {}), roomId: rid, visitorToken} || {},
         };
         const disableInput: IDialogflowCustomFields = {
             disableInput: true,
             disableInputMessage: 'Starting chat...',
             displayTyping: true,
         };
+
         await createMessage(app, rid, read, modify, { customFields: disableInput });
         const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, rid, event, DialogflowRequestType.EVENT);
         await createDialogflowMessage(app, rid, read, modify, response);

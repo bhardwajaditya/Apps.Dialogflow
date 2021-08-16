@@ -116,8 +116,8 @@ export class PostMessageSentHandler {
         }
 
         await createResponseMessage();
-        await handlePayloadActions(this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
-        await handleParameters(this.read, this.modify, this.persistence, this.http, rid, visitorToken, response);
+        await handlePayloadActions(this.app, this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
+        await handleParameters(this.app, this.read, this.modify, this.persistence, this.http, rid, visitorToken, response);
         await this.handleBotTyping(rid, response);
 
         return resetFallbackIntent(this.read, this.modify, rid);

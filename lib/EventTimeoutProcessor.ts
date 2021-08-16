@@ -11,7 +11,6 @@ export class EventScheduler implements IProcessor {
     }
 
     public async processor(jobContext: IJobContext, read: IRead, modify: IModify, http: IHttp, persis: IPersistence): Promise<void> {
-        await createDialogflowMessage(jobContext.rid, read, modify, jobContext.response);
         return ;
     }
 }

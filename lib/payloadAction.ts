@@ -1,14 +1,17 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
+import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
+import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { ActionIds } from '../enum/ActionIds';
 import {  DialogflowRequestType, IDialogflowAction, IDialogflowMessage, IDialogflowPayload, LanguageCode} from '../enum/Dialogflow';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
+import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
 import { getAppSettingValue } from '../lib/Settings';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
 
-export const  handlePayloadActions = async (read: IRead,  modify: IModify, http: IHttp, persistence: IPersistence, rid: string, visitorToken: string, dialogflowMessage: IDialogflowMessage) => {
+export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IModify, http: IHttp, persistence: IPersistence, rid: string, visitorToken: string, dialogflowMessage: IDialogflowMessage) => {
     const { messages = [] } = dialogflowMessage;
     for (const message of messages) {
         const { action = null } = message as IDialogflowPayload;
@@ -32,18 +35,18 @@ export const  handlePayloadActions = async (read: IRead,  modify: IModify, http:
                             await updateRoomCustomFields(rid, customFields, read, modify);
                         }
                     }
-                    await performHandover(modify, read, rid, visitorToken, targetDepartment);
+                    await performHandover(app, modify, read, rid, visitorToken, targetDepartment);
                 } else if (actionName === ActionIds.CLOSE_CHAT) {
-                    await closeChat(modify, read, rid, persistence);
+                    await closeChat(modify, read, rid);
+                } else if (actionName === ActionIds.NEW_WELCOME_EVENT) {
+                    const livechatRoom = await read.getRoomReader().getById(rid) as ILivechatRoom;
+                    if (!livechatRoom) { throw new Error(); }
+                    const { visitor: { livechatData } } = livechatRoom;
+                    await sendWelcomeEventToDialogFlow(app, read, modify, persistence, http, rid, visitorToken, livechatData);
                 } else if (actionName === ActionIds.SET_TIMEOUT) {
 
                     const event = { name: params.eventName, languageCode: LanguageCode.EN, parameters: {} };
-                    const response: IDialogflowMessage = await Dialogflow.sendRequest(http,
-                        read,
-                        modify,
-                        rid,
-                        event,
-                        DialogflowRequestType.EVENT);
+                    const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, rid, event, DialogflowRequestType.EVENT);
 
                     const task = {
                         id: 'event-scheduler',
@@ -54,14 +57,9 @@ export const  handlePayloadActions = async (read: IRead,  modify: IModify, http:
                     try {
                         await modify.getScheduler().scheduleOnce(task);
                     } catch (error) {
-
                         const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
-
-                        await createMessage(rid,
-                                            read,
-                                            modify,
-                                            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
-
+                        await createMessage(app, rid, read, modify,
+                            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
                         return;
                     }
 
@@ -72,11 +70,11 @@ export const  handlePayloadActions = async (read: IRead,  modify: IModify, http:
                     if (data && data.custom_languageCode) {
                         if (data.custom_languageCode !== params.newLanguageCode) {
                             await persistence.updateByAssociation(assoc, {custom_languageCode: params.newLanguageCode});
-                            sendChangeLanguageEvent(read, modify, persistence, rid, http, params.newLanguageCode);
+                            sendChangeLanguageEvent(app, read, modify, persistence, rid, http, params.newLanguageCode);
                         }
                     } else {
                         await persistence.createWithAssociation({custom_languageCode: params.newLanguageCode}, assoc);
-                        sendChangeLanguageEvent(read, modify, persistence, rid, http, params.newLanguageCode);
+                        sendChangeLanguageEvent(app, read, modify, persistence, rid, http, params.newLanguageCode);
                     }
                 }
             }
@@ -84,18 +82,18 @@ export const  handlePayloadActions = async (read: IRead,  modify: IModify, http:
     }
 };
 
-const sendChangeLanguageEvent = async (read: IRead, modify: IModify, persis: IPersistence, rid: string, http: IHttp, languageCode: string) => {
+const sendChangeLanguageEvent = async (app: IApp, read: IRead, modify: IModify, persis: IPersistence, rid: string, http: IHttp, languageCode: string) => {
     try {
 
         const event = { name: 'ChangeLanguage', languageCode, parameters:  {} };
         const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, rid, event, DialogflowRequestType.EVENT);
 
-        await createDialogflowMessage(rid, read, modify, response);
+        await createDialogflowMessage(app, rid, read, modify, response);
       } catch (error) {
 
         const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
 
-        await createMessage(rid,
+        await createMessage(app, rid,
                             read,
                             modify,
                             { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });

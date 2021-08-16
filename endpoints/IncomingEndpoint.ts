@@ -44,7 +44,7 @@ export class IncomingEndpoint extends ApiEndpoint {
                 const room = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
                 if (!room) { throw new Error(); }
                 const { visitor: { token: visitorToken } } = room;
-                await performHandover(modify, read, sessionId, visitorToken, targetDepartment);
+                await performHandover(this.app, modify, read, sessionId, visitorToken, targetDepartment);
                 break;
             case EndpointActionNames.TRIGGER_EVENT:
                 const { actionData: { event = null } = {} } = endpointContent;
@@ -55,9 +55,8 @@ export class IncomingEndpoint extends ApiEndpoint {
                     const livechatRoom = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
                     if (!livechatRoom) { throw new Error(); }
                     const { visitor: { token: vToken } } = livechatRoom;
-                    await createDialogflowMessage(sessionId, read, modify, response);
-                    this.app.getLogger().log(response);
-                    await handlePayloadActions(read, modify, http, persistence, sessionId, vToken, response);
+                    await createDialogflowMessage(this.app, sessionId, read, modify, response);
+                    await handlePayloadActions(this.app, read, modify, http, persistence, sessionId, vToken, response);
                 } catch (error) {
                     this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
                     throw new Error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
@@ -66,7 +65,7 @@ export class IncomingEndpoint extends ApiEndpoint {
             case EndpointActionNames.SEND_MESSAGE:
                 const { actionData: { messages = null } = {} } = endpointContent;
                 if (!messages) { throw new Error(Logs.INVALID_MESSAGES); }
-                await createDialogflowMessage(sessionId, read, modify, { messages, isFallback: false });
+                await createDialogflowMessage(this.app, sessionId, read, modify, { messages, isFallback: false });
                 break;
             default:
                 throw new Error(Logs.INVALID_ENDPOINT_ACTION);

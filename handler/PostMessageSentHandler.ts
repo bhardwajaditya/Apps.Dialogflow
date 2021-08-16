@@ -93,30 +93,31 @@ export class PostMessageSentHandler {
             this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
 
             const serviceUnavailable: string = await getAppSettingValue(this.read, AppSetting.DialogflowServiceUnavailableMessage);
-            await createMessage(rid,
-                this.read,
-                this.modify,
-                { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
+            await createMessage(this.app,
+                                rid,
+                                this.read,
+                                this.modify,
+                                { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
 
             updateRoomCustomFields(rid, { isChatBotFunctional: false }, this.read, this.modify);
             const targetDepartment: string = await getAppSettingValue(this.read, AppSetting.FallbackTargetDepartment);
-            await performHandover(this.modify, this.read, rid, visitorToken, targetDepartment);
+            await performHandover(this.app, this.modify, this.read, rid, visitorToken, targetDepartment);
 
             return;
         }
 
-        const createResponseMessage = async () => await createDialogflowMessage(rid, this.read, this.modify, response);
+        const createResponseMessage = async () => await createDialogflowMessage(this.app, rid, this.read, this.modify, response);
 
         // synchronous handover check
         const { isFallback } = response;
         if (isFallback) {
             await removeBotTypingListener(this.modify, rid, DialogflowBotUsername);
-            return incFallbackIntentAndSendResponse(this.read, this.modify, rid, createResponseMessage);
+            return incFallbackIntentAndSendResponse(this.app, this.read, this.modify, rid, createResponseMessage);
         }
 
         await createResponseMessage();
-        await handlePayloadActions(this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
-        await handleParameters(this.read, this.modify, this.persistence, this.http, rid, visitorToken, response);
+        await handlePayloadActions(this.app, this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
+        await handleParameters(this.app, this.read, this.modify, this.persistence, this.http, rid, visitorToken, response);
         await this.handleBotTyping(rid, response);
 
         return resetFallbackIntent(this.read, this.modify, rid);

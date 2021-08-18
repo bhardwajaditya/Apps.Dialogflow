@@ -3,8 +3,10 @@ import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { IJobContext, IProcessor } from '@rocket.chat/apps-engine/definition/scheduler';
 import { AppSetting } from '../../config/Settings';
 import { DialogflowRequestType, LanguageCode } from '../../enum/Dialogflow';
+import { JobName } from '../../enum/Scheduler';
 import { Dialogflow } from '../../lib/Dialogflow';
 import { getRoomAssoc, retrieveDataByAssociation } from '../../lib/Persistence';
+import { cancelAllSessionMaintenanceJobForSession } from '../../lib/Scheduler';
 import { getAppSettingValue } from '../../lib/Settings';
 import { SessionMaintenanceOnceSchedule } from './SessionMaintenanceOnceSchedule';
 
@@ -22,8 +24,9 @@ export class SessionMaintenanceProcessor implements IProcessor {
         const livechatRoom = await read.getRoomReader().getById(jobContext.sessionId) as ILivechatRoom;
         const { isOpen } = livechatRoom;
 
+        await cancelAllSessionMaintenanceJobForSession(modify, jobContext.sessionId);
+
         if (!isOpen) {
-            await modify.getScheduler().cancelJobByDataQuery({ sessionId: jobContext.sessionId });
             return;
         }
 
@@ -49,8 +52,9 @@ export class SessionMaintenanceProcessor implements IProcessor {
             // console.log(error);
         }
 
-        await modify.getScheduler().scheduleOnce(new SessionMaintenanceOnceSchedule('session-maintenance', sessionMaintenanceInterval, {
+        await modify.getScheduler().scheduleOnce(new SessionMaintenanceOnceSchedule(JobName.SESSION_MAINTENANCE, sessionMaintenanceInterval, {
             sessionId: jobContext.sessionId,
+            jobName: JobName.SESSION_MAINTENANCE,
         }));
 
         return Promise.resolve(undefined);

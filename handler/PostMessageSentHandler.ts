@@ -13,6 +13,7 @@ import { handlePayloadActions } from '../lib/payloadAction';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
+import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
 import { getAppSettingValue } from '../lib/Settings';
 import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
 import { handleTimeout } from '../lib/Timeout';
@@ -37,7 +38,7 @@ export class PostMessageSentHandler {
             if (roomCustomFields && roomCustomFields.isHandedOverFromDialogFlow === true) {
                 return;
             }
-            await this.modify.getScheduler().cancelJobByDataQuery({ sessionId: rid });
+            await cancelAllSessionMaintenanceJobForSession(this.modify, rid);
             await this.handleClosedByVisitor(rid, this.read);
         }
 

@@ -1,6 +1,7 @@
 import { IHttp, IHttpRequest, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
+import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
 
 export class LivechatRoomClosedHandler {
     constructor(
@@ -13,6 +14,6 @@ export class LivechatRoomClosedHandler {
     ) { }
 
     public async exec() {
-        await this.modify.getScheduler().cancelJobByDataQuery({ sessionId: this.room.id });
+        await cancelAllSessionMaintenanceJobForSession(this.modify, this.room.id);
     }
 }

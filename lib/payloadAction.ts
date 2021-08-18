@@ -4,6 +4,7 @@ import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { ActionIds } from '../enum/ActionIds';
 import {  DialogflowRequestType, IDialogflowAction, IDialogflowMessage, IDialogflowPayload, LanguageCode} from '../enum/Dialogflow';
+import { JobName } from '../enum/Scheduler';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
@@ -49,7 +50,7 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                     const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, rid, event, DialogflowRequestType.EVENT);
 
                     const task = {
-                        id: 'event-scheduler',
+                        id: JobName.EVENT_SCHEDULER,
                         when: `${Number(params.time)} seconds`,
                         data: {response, rid},
                     };

@@ -6,6 +6,7 @@ import { AppSetting, DefaultMessage } from '../config/Settings';
 import { Logs } from '../enum/Logs';
 import { removeBotTypingListener } from '../lib//BotTyping';
 import { createMessage } from '../lib/Message';
+import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
 import { getAppSettingValue } from '../lib/Settings';
 
 export class OnAgentUnassignedHandler {
@@ -41,7 +42,7 @@ export class OnAgentUnassignedHandler {
 }
 
 export const closeChat = async (modify: IModify, read: IRead, rid: string) => {
-    await modify.getScheduler().cancelJobByDataQuery({ sessionId: rid });
+    await cancelAllSessionMaintenanceJobForSession(modify, rid);
     const room: IRoom = (await read.getRoomReader().getById(rid)) as IRoom;
     if (!room) { throw new Error(Logs.INVALID_ROOM_ID); }
 

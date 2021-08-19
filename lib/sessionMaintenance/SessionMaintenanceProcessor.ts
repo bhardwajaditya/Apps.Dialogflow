@@ -24,9 +24,8 @@ export class SessionMaintenanceProcessor implements IProcessor {
         const livechatRoom = await read.getRoomReader().getById(jobContext.sessionId) as ILivechatRoom;
         const { isOpen } = livechatRoom;
 
-        await cancelAllSessionMaintenanceJobForSession(modify, jobContext.sessionId);
-
         if (!isOpen) {
+            await cancelAllSessionMaintenanceJobForSession(modify, jobContext.sessionId);
             return;
         }
 

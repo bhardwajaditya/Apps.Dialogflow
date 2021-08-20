@@ -18,6 +18,7 @@ import { IUIKitLivechatInteractionHandler, IUIKitResponse, UIKitLivechatBlockInt
 import { settings } from './config/Settings';
 import { FulfillmentsEndpoint } from './endpoints/FulfillmentsEndpoint';
 import { IncomingEndpoint } from './endpoints/IncomingEndpoint';
+import { JobName } from './enum/Scheduler';
 import { ExecuteLivechatBlockActionHandler } from './handler/ExecuteLivechatBlockActionHandler';
 import { LivechatRoomClosedHandler } from './handler/LivechatRoomClosedHandler';
 import { OnAgentAssignedHandler } from './handler/OnAgentAssignedHandler';
@@ -89,8 +90,8 @@ export class DialogflowApp extends App implements IPostMessageSent, IPostLivecha
         });
 
         await configuration.scheduler.registerProcessors([
-                                                            new SessionMaintenanceProcessor('session-maintenance'),
-                                                            new EventScheduler('event-scheduler'),
+                                                            new SessionMaintenanceProcessor(JobName.SESSION_MAINTENANCE),
+                                                            new EventScheduler(JobName.EVENT_SCHEDULER),
                                                         ]);
 
         await Promise.all(settings.map((setting) => configuration.settings.provideSetting(setting)));

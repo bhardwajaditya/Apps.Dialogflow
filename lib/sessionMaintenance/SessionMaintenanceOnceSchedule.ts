@@ -2,6 +2,7 @@ import { IOnetimeSchedule } from '@rocket.chat/apps-engine/definition/scheduler'
 
 export interface ISessionMaintenanceData {
     sessionId: string;
+    jobName: string;
 }
 
 export class SessionMaintenanceOnceSchedule implements IOnetimeSchedule {

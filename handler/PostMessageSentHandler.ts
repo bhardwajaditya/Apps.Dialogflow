@@ -10,7 +10,10 @@ import { botTypingListener, removeBotTypingListener } from '../lib//BotTyping';
 import { Dialogflow } from '../lib/Dialogflow';
 import { createDialogflowMessage, createMessage } from '../lib/Message';
 import { handlePayloadActions } from '../lib/payloadAction';
+import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
+import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
+import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
 import { getAppSettingValue } from '../lib/Settings';
 import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
 import { handleTimeout } from '../lib/Timeout';
@@ -35,16 +38,16 @@ export class PostMessageSentHandler {
             if (roomCustomFields && roomCustomFields.isHandedOverFromDialogFlow === true) {
                 return;
             }
-            await this.modify.getScheduler().cancelJobByDataQuery({ sessionId: rid });
-            await this.handleClosedByVisitor(rid);
+            await cancelAllSessionMaintenanceJobForSession(this.modify, rid);
+            await this.handleClosedByVisitor(rid, this.read);
         }
 
         if (text === Message.CUSTOMER_IDEL_TIMEOUT) {
             if (roomCustomFields && roomCustomFields.isHandedOverFromDialogFlow === true) {
                 return;
             }
-            await this.handleClosedByVisitor(rid);
-            await closeChat(this.modify, this.read, rid);
+            await this.handleClosedByVisitor(rid, this.read);
+            await closeChat(this.modify, this.read, rid, this.persistence);
             return;
         }
 
@@ -75,15 +78,14 @@ export class PostMessageSentHandler {
             return;
         }
 
-        const { visitor } = room as ILivechatRoom;
-        const { token: visitorToken } = visitor;
-        await handleTimeout(this.app, this.message, this.read, this.http, this.persistence, this.modify, visitor);
+        await handleTimeout(this.app, this.message, this.read, this.http, this.persistence, this.modify);
 
-        if (sender.username === DialogflowBotUsername || sender.username !== visitor.username) {
+        if (sender.username === DialogflowBotUsername) {
             return;
         }
 
         let response: IDialogflowMessage;
+        const { visitor: { token: visitorToken } } = room as ILivechatRoom;
 
         try {
             await botTypingListener(this.modify, rid, DialogflowBotUsername);
@@ -105,8 +107,6 @@ export class PostMessageSentHandler {
             return;
         }
 
-        handlePayloadActions(this.app, this.read, this.modify, this.http, rid, visitorToken, response);
-
         const createResponseMessage = async () => await createDialogflowMessage(this.app, rid, this.read, this.modify, response);
 
         // synchronous handover check
@@ -117,6 +117,8 @@ export class PostMessageSentHandler {
         }
 
         await createResponseMessage();
+        await handlePayloadActions(this.app, this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
+        await handleParameters(this.app, this.read, this.modify, this.persistence, this.http, rid, visitorToken, response);
         await this.handleBotTyping(rid, response);
 
         return resetFallbackIntent(this.read, this.modify, rid);
@@ -142,16 +144,20 @@ export class PostMessageSentHandler {
         }
     }
 
-    private async handleClosedByVisitor(rid: string) {
+    private async handleClosedByVisitor(rid: string, read: IRead) {
         const DialogflowEnableChatClosedByVisitorEvent: boolean = await getAppSettingValue(this.read, AppSetting.DialogflowEnableChatClosedByVisitorEvent);
         const DialogflowChatClosedByVisitorEventName: string = await getAppSettingValue(this.read, AppSetting.DialogflowChatClosedByVisitorEventName);
         await this.removeBotTypingListener(rid);
+
+        const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
         if (DialogflowEnableChatClosedByVisitorEvent) {
             try {
+                const defaultLanguageCode = await getAppSettingValue(this.read, AppSetting.DialogflowDefaultLanguage);
+
                 let res: IDialogflowMessage;
-                res = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, {
+                res = (await Dialogflow.sendRequest(this.http, this.read, this.modify,  rid, {
                     name: DialogflowChatClosedByVisitorEventName,
-                    languageCode: LanguageCode.EN,
+                    languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
                 }, DialogflowRequestType.EVENT));
             } catch (error) {
                 this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);

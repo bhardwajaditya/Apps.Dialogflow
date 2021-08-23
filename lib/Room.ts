@@ -1,9 +1,10 @@
-import { IModify, IRead } from '@rocket.chat/apps-engine/definition/accessors';
+import { IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { IDepartment, ILivechatRoom, ILivechatTransferData, IVisitor } from '@rocket.chat/apps-engine/definition/livechat';
 import { IRoom } from '@rocket.chat/apps-engine/definition/rooms';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { Logs } from '../enum/Logs';
+import { JobName } from '../enum/Scheduler';
 import { removeBotTypingListener } from '../lib/BotTyping';
 import { getAppSettingValue } from '../lib/Settings';
 import { createMessage } from './Message';
@@ -34,8 +35,7 @@ export const updateRoomCustomFields = async (rid: string, data: any, read: IRead
     }
 };
 
-export const closeChat = async (modify: IModify, read: IRead, rid: string) => {
-    await modify.getScheduler().cancelJobByDataQuery({ sessionId: rid });
+export const closeChat = async (modify: IModify, read: IRead, rid: string, persistence?: IPersistence) => {
     const room: IRoom = (await read.getRoomReader().getById(rid)) as IRoom;
     if (!room) { throw new Error(Logs.INVALID_ROOM_ID); }
 
@@ -113,8 +113,9 @@ export const performHandover = async (app: IApp, modify: IModify, read: IRead, r
     if (!sessionMaintenanceInterval) {
         console.log('Session Maintenance Settings not configured');
     } else {
-        await modify.getScheduler().scheduleOnce(new SessionMaintenanceOnceSchedule('session-maintenance', sessionMaintenanceInterval, {
+        await modify.getScheduler().scheduleOnce(new SessionMaintenanceOnceSchedule(JobName.SESSION_MAINTENANCE, sessionMaintenanceInterval, {
             sessionId: room.id,
+            jobName: JobName.SESSION_MAINTENANCE,
         }));
     }
 };

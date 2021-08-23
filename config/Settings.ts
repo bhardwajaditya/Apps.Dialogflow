@@ -1,12 +1,15 @@
 import { ISetting, SettingType } from '@rocket.chat/apps-engine/definition/settings';
+import { LanguageCode } from '../enum/Dialogflow';
 
 export enum AppSetting {
     DialogflowBotUsername = 'dialogflow_bot_username',
     DialogflowBotId = 'dialogflow_bot_id',
     DialogflowProjectId = 'dialogflow_project_id',
+    DialogflowVersion = 'dialog_flow_version',
     DialogflowClientEmail = 'dialogflow_client_email',
     DialogFlowPrivateKey = 'dialogflow_private_key',
     DialogflowEnvironment = 'dialogflow_environment',
+    DialogflowDefaultLanguage = 'dialogflow_default_language',
     DialogflowFallbackResponsesLimit = 'dialogflow_fallback_responses_limit',
     FallbackTargetDepartment = 'fallback_target_department',
     DialogflowHandoverMessage = 'dialogflow_handover_message',
@@ -25,6 +28,9 @@ export enum AppSetting {
     DialogflowSessionMaintenanceInterval = 'dialogflow_session_maintenance_interval',
     DialogflowSessionMaintenanceEventName = 'dialogflow_session_maintenance_event_name',
     DialogflowLogLevel = 'log_level',
+    DialogflowAgentId = 'dialogflow_cx_agent_id',
+    DialogflowRegion = 'dialogflow_cx_region',
+    DialogflowCXFallbackEvents = 'dialogflow_cx_fallback_events',
 }
 
 export enum DefaultMessage {
@@ -38,6 +44,18 @@ export enum DefaultMessage {
 }
 
 export const settings: Array<ISetting> = [
+    {
+        id: AppSetting.DialogflowVersion,
+        public: true,
+        type: SettingType.SELECT,
+        packageValue: 'ES',
+        i18nLabel: 'agent_version',
+        values: [
+            { key: 'ES', i18nLabel: 'ES' },
+            { key: 'CX', i18nLabel: 'CX' },
+        ],
+        required: true,
+    },
     {
         id: AppSetting.DialogflowBotUsername,
         public: true,
@@ -88,6 +106,36 @@ export const settings: Array<ISetting> = [
         i18nLabel: 'dialogflow_environment',
         i18nDescription: 'dialogflow_environment_description',
         required: false,
+    },
+    {
+        id: AppSetting.DialogflowAgentId,
+        public: true,
+        type: SettingType.STRING,
+        packageValue: '',
+        i18nLabel: 'dialogflow_cx_agent_id',
+        i18nDescription: 'dialogflow_cx_agent_id_desc',
+        required: false,
+    },
+    {
+        id: AppSetting.DialogflowRegion,
+        public: true,
+        type: SettingType.STRING,
+        packageValue: '',
+        i18nLabel: 'dialogflow_cx_region',
+        i18nDescription: 'dialogflow_cx_region_desc',
+        required: false,
+    },
+    {
+        id: AppSetting.DialogflowDefaultLanguage,
+        public: true,
+        type: SettingType.SELECT,
+        packageValue: LanguageCode.EN,
+        i18nLabel: 'dialogflow_default_language',
+        values: [
+            { key: LanguageCode.EN, i18nLabel: 'English (en)' },
+            { key: LanguageCode.PTBR, i18nLabel: 'Portuguese - Brazil (pt-BR)' },
+        ],
+        required: true,
     },
     {
         id: AppSetting.DialogflowFallbackResponsesLimit,

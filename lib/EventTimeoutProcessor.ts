@@ -15,7 +15,6 @@ export class EventScheduler implements IProcessor {
     constructor(id: string, app: IApp) {
         this.id = id;
         this.app = app;
-        console.log(this);
     }
 
     public async processor(jobContext: IJobContext, read: IRead, modify: IModify, http: IHttp, persis: IPersistence): Promise<void> {

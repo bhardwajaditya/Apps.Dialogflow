@@ -39,10 +39,15 @@ class DialogflowClass {
             };
 
             const queryParams = {
-                timeZone: 'America/Los_Angeles', parameters:  {
+                timeZone: 'America/Los_Angeles',
+                parameters:  {
                     username: room.visitor.username,
                 },
             };
+
+            if (requestType === DialogflowRequestType.EVENT && typeof request !== 'string') {
+                queryParams.parameters = {...queryParams.parameters, ...(request.parameters ? request.parameters : {})};
+            }
 
             const accessToken = await this.getAccessToken(read, modify, http, sessionId);
             if (!accessToken) { throw Error(Logs.ACCESS_TOKEN_ERROR); }

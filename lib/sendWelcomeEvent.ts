@@ -23,14 +23,14 @@ export const sendWelcomeEventToDialogFlow = async (app: IApp, read: IRead,  modi
             displayTyping: true,
         };
 
-        await createMessage(app, rid, read, modify, { customFields: disableInput });
+        await createMessage(rid, read, modify, { customFields: disableInput }, app);
         const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, rid, event, DialogflowRequestType.EVENT);
-        await createDialogflowMessage(app, rid, read, modify, response);
+        await createDialogflowMessage(rid, read, modify, response, app);
     } catch (error) {
         console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
         const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
-        await createMessage(app, rid, read, modify,
-            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
+        await createMessage(rid, read, modify,
+            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage }, app);
         return;
     }
 };

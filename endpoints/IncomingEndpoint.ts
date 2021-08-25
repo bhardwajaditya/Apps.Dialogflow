@@ -8,7 +8,7 @@ import { Logs } from '../enum/Logs';
 import { Dialogflow } from '../lib/Dialogflow';
 import { createHttpResponse } from '../lib/Http';
 import { createDialogflowMessage } from '../lib/Message';
-import { handlePayloadActions } from '../lib/payloadAction';
+import { handlePayloadResponse } from '../lib/payloadAction';
 import { closeChat, performHandover } from '../lib/Room';
 
 export class IncomingEndpoint extends ApiEndpoint {
@@ -55,8 +55,7 @@ export class IncomingEndpoint extends ApiEndpoint {
                     const livechatRoom = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
                     if (!livechatRoom) { throw new Error(); }
                     const { visitor: { token: vToken } } = livechatRoom;
-                    await createDialogflowMessage(this.app, sessionId, read, modify, response);
-                    await handlePayloadActions(this.app, read, modify, http, persistence, sessionId, vToken, response);
+                    await handlePayloadResponse(this.app, read, modify, http, persistence, sessionId, vToken, response);
                 } catch (error) {
                     this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
                     throw new Error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);

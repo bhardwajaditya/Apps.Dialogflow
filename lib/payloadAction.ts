@@ -3,7 +3,7 @@ import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { ActionIds } from '../enum/ActionIds';
-import {  DialogflowRequestType, IDialogflowAction, IDialogflowMessage, IDialogflowPayload, LanguageCode} from '../enum/Dialogflow';
+import {  DialogflowRequestType, IDialogflowAction, IDialogflowImageCard, IDialogflowMessage, IDialogflowPayload, IDialogflowQuickReplies, LanguageCode} from '../enum/Dialogflow';
 import { JobName } from '../enum/Scheduler';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
@@ -12,8 +12,8 @@ import { getAppSettingValue } from '../lib/Settings';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
 
-export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IModify, http: IHttp, persistence: IPersistence, rid: string, visitorToken: string, dialogflowMessage: IDialogflowMessage) => {
-    const { messages = [] } = dialogflowMessage;
+export const  handlePayloadResponse = async (app: IApp, read: IRead,  modify: IModify, http: IHttp, persistence: IPersistence, rid: string, visitorToken: string, dialogflowMessage: IDialogflowMessage) => {
+    const { messages = [], isFallback = false } = dialogflowMessage;
     for (const message of messages) {
         const { action = null } = message as IDialogflowPayload;
         if (action) {
@@ -79,6 +79,14 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                     }
                 }
             }
+        } else {
+            const textMessages: Array<string | IDialogflowQuickReplies | IDialogflowPayload |  IDialogflowImageCard> = [];
+            textMessages.push(message);
+            const messagesToProcess: IDialogflowMessage = {
+                messages: textMessages,
+                isFallback: isFallback,
+            };
+            await createDialogflowMessage(app, rid, read, modify, messagesToProcess);
         }
     }
 };

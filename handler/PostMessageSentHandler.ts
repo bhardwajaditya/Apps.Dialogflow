@@ -9,7 +9,7 @@ import { Logs } from '../enum/Logs';
 import { botTypingListener, removeBotTypingListener } from '../lib//BotTyping';
 import { Dialogflow } from '../lib/Dialogflow';
 import { createDialogflowMessage, createMessage } from '../lib/Message';
-import { handlePayloadActions } from '../lib/payloadAction';
+import { handlePayloadResponse } from '../lib/payloadAction';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
@@ -116,8 +116,7 @@ export class PostMessageSentHandler {
             return incFallbackIntentAndSendResponse(this.app, this.read, this.modify, rid, createResponseMessage);
         }
 
-        await createResponseMessage();
-        await handlePayloadActions(this.app, this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
+        await handlePayloadResponse(this.app, this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
         await handleParameters(this.app, this.read, this.modify, this.persistence, this.http, rid, visitorToken, response);
         await this.handleBotTyping(rid, response);
 

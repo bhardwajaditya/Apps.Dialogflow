@@ -147,7 +147,6 @@ class DialogflowClass {
                 const { text, payload: { quickReplies = null, customFields = null, action = null } = {} } = message;
                 if (text) {
                     const { text: textMessageArray } = text;
-                    messages.push({ text: textMessageArray[0] });
                     if (concatText !== '') {
                         concatText += `\n \n`;
                     }
@@ -231,7 +230,6 @@ class DialogflowClass {
                     const { text, payload: { quickReplies = null, customFields = null, action = null, isFallback = false } = {} } = message;
                     if (text) {
                         const { text: textMessageArray } = text;
-                        messages.push({ text: textMessageArray[0] });
                         if (concatText !== '') {
                             concatText += `\n \n`;
                         }

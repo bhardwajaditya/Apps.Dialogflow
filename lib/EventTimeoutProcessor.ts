@@ -10,11 +10,9 @@ import { getAppSettingValue } from './Settings';
 
 export class EventScheduler implements IProcessor {
     public id: string;
-    private readonly app: IApp;
 
-    constructor(id: string, app: IApp) {
+    constructor(id: string) {
         this.id = id;
-        this.app = app;
     }
 
     public async processor(jobContext: IJobContext, read: IRead, modify: IModify, http: IHttp, persis: IPersistence): Promise<void> {

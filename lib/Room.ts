@@ -55,11 +55,11 @@ export const performHandover = async (app: IApp, modify: IModify, read: IRead, r
 
     // Use handoverMessage if set
     if (handoverMessage) {
-        await createMessage(app, rid, read, modify, { text: handoverMessage });
+        await createMessage(rid, read, modify, { text: handoverMessage }, app);
     } else if (dialogflowMessage)  {
         await dialogflowMessage();
     } else {
-        await createMessage(app, rid, read, modify, { text: DefaultMessage.DEFAULT_DialogflowHandoverMessage });
+        await createMessage(rid, read, modify, { text: DefaultMessage.DEFAULT_DialogflowHandoverMessage }, app);
     }
 
     const room: ILivechatRoom = (await read.getRoomReader().getById(rid)) as ILivechatRoom;
@@ -101,7 +101,7 @@ export const performHandover = async (app: IApp, modify: IModify, read: IRead, r
 
         console.error('Failed to handover', JSON.stringify(handoverFailure));
 
-        await createMessage(app, rid, read, modify, { text: offlineMessage ? offlineMessage : DefaultMessage.DEFAULT_DialogflowHandoverFailedMessage });
+        await createMessage(rid, read, modify, { text: offlineMessage ? offlineMessage : DefaultMessage.DEFAULT_DialogflowHandoverFailedMessage }, app);
 
         await closeChat(modify, read, rid);
         return;

@@ -34,15 +34,16 @@ const sendChangeLanguageEvent = async (app: IApp, read: IRead, modify: IModify, 
         const event = { name: 'ChangeLanguage', languageCode, parameters:  {} };
         const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, rid, event, DialogflowRequestType.EVENT);
 
-        await createDialogflowMessage(app, rid, read, modify, response);
+        await createDialogflowMessage(rid, read, modify, response, app);
       } catch (error) {
 
         const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
 
-        await createMessage(app, rid,
+        await createMessage(rid,
                             read,
                             modify,
-                            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
+                            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage }, 
+                            app);
 
         return;
     }

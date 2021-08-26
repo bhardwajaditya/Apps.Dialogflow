@@ -119,21 +119,19 @@ export const createMessage = async (rid: string, read: IRead,  modify: IModify, 
     const sender = await read.getUserReader().getByUsername(botUserName);
     const room = await read.getRoomReader().getById(rid) as ILivechatRoom;
 
-    if (app) {
-        if (!botUserName) {
-            app.getLogger().error(Logs.EMPTY_BOT_USERNAME_SETTING);
-            return;
-        }
+    if (!botUserName) {
+        if (app) { app.getLogger().error(Logs.EMPTY_BOT_USERNAME_SETTING); }
+        return;
+    }
 
-        if (!sender) {
-            app.getLogger().error(Logs.INVALID_BOT_USERNAME_SETTING);
-            return;
-        }
+    if (!sender) {
+        if (app) { app.getLogger().error(Logs.INVALID_BOT_USERNAME_SETTING); }
+        return;
+    }
 
-        if (!room) {
-            app.getLogger().error(`${Logs.INVALID_ROOM_ID} ${rid}`);
-            return;
-        }
+    if (!room) {
+        if (app) { app.getLogger().error(`${Logs.INVALID_ROOM_ID} ${rid}`); }
+        return;
     }
 
     if (!room.isOpen) {

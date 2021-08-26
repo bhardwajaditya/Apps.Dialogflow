@@ -51,11 +51,11 @@ export class OnAgentAssignedHandler {
                 displayTyping: true,
             };
             const welcomeMessage: string = await getAppSettingValue(this.read, AppSetting.DialogflowWelcomeMessage);
-            await createMessage(this.app, rid, this.read, this.modify,
+            await createMessage(rid, this.read, this.modify,
                 {
                     text: welcomeMessage || DefaultMessage.DEFAULT_DialogflowWelcomeMessage,
                     customFields: disableInput,
-                });
+                }, this.app);
         }
 
         await updateRoomCustomFields(rid, { welcomeEventSent: true }, this.read, this.modify);

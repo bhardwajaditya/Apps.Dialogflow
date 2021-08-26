@@ -94,11 +94,11 @@ export class PostMessageSentHandler {
             this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
 
             const serviceUnavailable: string = await getAppSettingValue(this.read, AppSetting.DialogflowServiceUnavailableMessage);
-            await createMessage(this.app,
-                                rid,
+            await createMessage(rid,
                                 this.read,
                                 this.modify,
-                                { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
+                                { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage }, 
+                                this.app);
 
             updateRoomCustomFields(rid, { isChatBotFunctional: false }, this.read, this.modify);
             const targetDepartment: string = await getAppSettingValue(this.read, AppSetting.FallbackTargetDepartment);
@@ -107,7 +107,7 @@ export class PostMessageSentHandler {
             return;
         }
 
-        const createResponseMessage = async () => await createDialogflowMessage(this.app, rid, this.read, this.modify, response);
+        const createResponseMessage = async () => await createDialogflowMessage(rid, this.read, this.modify, response, this.app);
 
         // synchronous handover check
         const { isFallback } = response;

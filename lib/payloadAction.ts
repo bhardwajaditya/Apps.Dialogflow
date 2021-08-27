@@ -21,6 +21,10 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
             const targetDepartment: string = await getAppSettingValue(read, AppSetting.FallbackTargetDepartment);
             if (actionName) {
                 if (actionName === ActionIds.PERFORM_HANDOVER) {
+                    if (!targetDepartment) {
+                        console.error('Failed to handover: Handover Department not configured');
+                        return;
+                    }
                     if (params) {
                         const customFields: any = {};
                         if (params.salesforceButtonId) {

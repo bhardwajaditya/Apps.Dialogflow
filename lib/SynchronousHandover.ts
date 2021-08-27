@@ -20,11 +20,15 @@ export const incFallbackIntentAndSendResponse = async (app: IApp, read: IRead, m
     await updateRoomCustomFields(sessionId, { fallbackCount: newFallbackCount }, read, modify);
 
     if (newFallbackCount === fallbackThreshold) {
+        const targetDepartmentName: string | undefined = await getAppSettingValue(read, AppSetting.FallbackTargetDepartment);
+        if (!targetDepartmentName) {
+            console.error('Failed to handover: Handover Department not configured');
+            return;
+        }
+
         // perform handover
         const { visitor: { token: visitorToken } } = room;
         if (!visitorToken) { throw new Error(Logs.INVALID_VISITOR_TOKEN); }
-
-        const targetDepartmentName: string | undefined = await getAppSettingValue(read, AppSetting.FallbackTargetDepartment);
 
         // Session Id from Dialogflow will be the same as Room id
         await performHandover(app, modify, read, sessionId, visitorToken, targetDepartmentName, dialogflowMessage);

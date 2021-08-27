@@ -100,8 +100,13 @@ export class PostMessageSentHandler {
                                 this.modify,
                                 { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
 
-            updateRoomCustomFields(rid, { isChatBotFunctional: false }, this.read, this.modify);
             const targetDepartment: string = await getAppSettingValue(this.read, AppSetting.FallbackTargetDepartment);
+            if (!targetDepartment) {
+                console.error('Failed to handover: Handover Department not configured');
+                return;
+            }
+            
+            updateRoomCustomFields(rid, { isChatBotFunctional: false }, this.read, this.modify);
             await performHandover(this.app, this.modify, this.read, rid, visitorToken, targetDepartment);
 
             return;

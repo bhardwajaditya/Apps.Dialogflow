@@ -10,7 +10,7 @@ import { Logs } from '../enum/Logs';
 import { uuid } from './Helper';
 import { getAppSettingValue } from './Settings';
 
-export const createDialogflowMessage = async (app: IApp, rid: string, read: IRead,  modify: IModify, dialogflowMessage: IDialogflowMessage): Promise<any> => {
+export const createDialogflowMessage = async (rid: string, read: IRead,  modify: IModify, dialogflowMessage: IDialogflowMessage, app?: IApp ): Promise<any> => {
     const { messages = [] } = dialogflowMessage;
 
     for (const message of messages) {
@@ -52,7 +52,7 @@ export const createDialogflowMessage = async (app: IApp, rid: string, read: IRea
             data.blocks = blocks;
         }
 
-        await createMessage(app, rid, read, modify, data);
+        await createMessage(rid, read, modify, data, app);
 
         if (imagecards) {
             const imageCardBlock: Array<any> = imagecards.map((payload) => {
@@ -100,36 +100,37 @@ export const createDialogflowMessage = async (app: IApp, rid: string, read: IRea
             });
 
             imageCardBlock.forEach(async (i) => {
-                await createMessage(app, rid, read, modify, {
+                await createMessage(rid, read, modify, {
                     imageCardBlock: i.imageBlock,
                     ...i.title && { text: i.title },
                     ...i.cardActionsBlock && { actionsBlock: i.cardActionsBlock },
-                });
+                }, app);
             });
         }
     }
 };
 
-export const createMessage = async (app: IApp, rid: string, read: IRead,  modify: IModify, message: any ): Promise<any> => {
+export const createMessage = async (rid: string, read: IRead,  modify: IModify, message: any, app?: IApp ): Promise<any> => {
     if (!message) {
         return;
     }
 
     const botUserName = await getAppSettingValue(read, AppSetting.DialogflowBotUsername);
-    if (!botUserName) {
-        app.getLogger().error(Logs.EMPTY_BOT_USERNAME_SETTING);
-        return;
-    }
-
     const sender = await read.getUserReader().getByUsername(botUserName);
-    if (!sender) {
-        app.getLogger().error(Logs.INVALID_BOT_USERNAME_SETTING);
+    const room = await read.getRoomReader().getById(rid) as ILivechatRoom;
+
+    if (!botUserName) {
+        if (app) { app.getLogger().error(Logs.EMPTY_BOT_USERNAME_SETTING); }
         return;
     }
 
-    const room = await read.getRoomReader().getById(rid) as ILivechatRoom;
+    if (!sender) {
+        if (app) { app.getLogger().error(Logs.INVALID_BOT_USERNAME_SETTING); }
+        return;
+    }
+
     if (!room) {
-        app.getLogger().error(`${Logs.INVALID_ROOM_ID} ${rid}`);
+        if (app) { app.getLogger().error(`${Logs.INVALID_ROOM_ID} ${rid}`); }
         return;
     }
 
@@ -232,5 +233,5 @@ export const sendCloseChatButton = async (app: IApp, read: IRead, modify: IModif
     }];
 
     const actionsBlock: IActionsBlock = { type: BlockType.ACTIONS, elements };
-    await createMessage(app, rid, read, modify, { actionsBlock });
+    await createMessage(rid, read, modify, { actionsBlock }, app);
 };

@@ -8,7 +8,7 @@ import { Logs } from '../enum/Logs';
 import { Dialogflow } from '../lib/Dialogflow';
 import { createHttpResponse } from '../lib/Http';
 import { createDialogflowMessage } from '../lib/Message';
-import { handlePayloadResponse } from '../lib/payloadAction';
+import { handlePayloadActions } from '../lib/payloadAction';
 import { closeChat, performHandover } from '../lib/Room';
 
 export class IncomingEndpoint extends ApiEndpoint {
@@ -55,7 +55,9 @@ export class IncomingEndpoint extends ApiEndpoint {
                     const livechatRoom = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
                     if (!livechatRoom) { throw new Error(); }
                     const { visitor: { token: vToken } } = livechatRoom;
-                    await handlePayloadResponse(this.app, read, modify, http, persistence, sessionId, vToken, response);
+                    //widechat specific change
+                    // await createDialogflowMessage(sessionId, read, modify, response, this.app);
+                    await handlePayloadActions(this.app, read, modify, http, persistence, sessionId, vToken, response);
                 } catch (error) {
                     this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
                     throw new Error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
@@ -64,7 +66,7 @@ export class IncomingEndpoint extends ApiEndpoint {
             case EndpointActionNames.SEND_MESSAGE:
                 const { actionData: { messages = null } = {} } = endpointContent;
                 if (!messages) { throw new Error(Logs.INVALID_MESSAGES); }
-                await createDialogflowMessage(this.app, sessionId, read, modify, { messages, isFallback: false });
+                await createDialogflowMessage(sessionId, read, modify, { messages, isFallback: false }, this.app);
                 break;
             default:
                 throw new Error(Logs.INVALID_ENDPOINT_ACTION);

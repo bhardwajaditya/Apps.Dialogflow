@@ -12,7 +12,7 @@ import { getAppSettingValue } from '../lib/Settings';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
 
-export const  handlePayloadResponse = async (app: IApp, read: IRead,  modify: IModify, http: IHttp, persistence: IPersistence, rid: string, visitorToken: string, dialogflowMessage: IDialogflowMessage) => {
+export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IModify, http: IHttp, persistence: IPersistence, rid: string, visitorToken: string, dialogflowMessage: IDialogflowMessage) => {
     const { messages = [], isFallback = false } = dialogflowMessage;
     for (const message of messages) {
         const { action = null } = message as IDialogflowPayload;
@@ -46,21 +46,19 @@ export const  handlePayloadResponse = async (app: IApp, read: IRead,  modify: IM
                     await sendWelcomeEventToDialogFlow(app, read, modify, persistence, http, rid, visitorToken, livechatData);
                 } else if (actionName === ActionIds.SET_TIMEOUT) {
 
-                    const event = { name: params.eventName, languageCode: LanguageCode.EN, parameters: {} };
-                    const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, rid, event, DialogflowRequestType.EVENT);
-
                     const task = {
                         id: JobName.EVENT_SCHEDULER,
                         when: `${Number(params.time)} seconds`,
-                        data: {response, rid},
+                        data: { eventName: params.eventName , rid },
                     };
 
                     try {
                         await modify.getScheduler().scheduleOnce(task);
                     } catch (error) {
                         const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
-                        await createMessage(app, rid, read, modify,
-                            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
+                        await createMessage(rid, read, modify,
+                            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage },
+                            app);
                         return;
                     }
 
@@ -80,13 +78,14 @@ export const  handlePayloadResponse = async (app: IApp, read: IRead,  modify: IM
                 }
             }
         } else {
+            // widechat specific
             const textMessages: Array<string | IDialogflowQuickReplies | IDialogflowPayload |  IDialogflowImageCard> = [];
             textMessages.push(message);
             const messagesToProcess: IDialogflowMessage = {
                 messages: textMessages,
                 isFallback: isFallback,
             };
-            await createDialogflowMessage(app, rid, read, modify, messagesToProcess);
+            await createDialogflowMessage(rid, read, modify, messagesToProcess, app);
         }
     }
 };
@@ -97,15 +96,16 @@ const sendChangeLanguageEvent = async (app: IApp, read: IRead, modify: IModify, 
         const event = { name: 'ChangeLanguage', languageCode, parameters:  {} };
         const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, rid, event, DialogflowRequestType.EVENT);
 
-        await createDialogflowMessage(app, rid, read, modify, response);
+        await createDialogflowMessage(rid, read, modify, response, app);
       } catch (error) {
 
         const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
 
-        await createMessage(app, rid,
+        await createMessage(rid,
                             read,
                             modify,
-                            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
+                            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage },
+                            app);
 
         return;
     }

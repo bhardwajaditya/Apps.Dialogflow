@@ -3,8 +3,9 @@ import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { ActionIds } from '../enum/ActionIds';
-import {  DialogflowRequestType, IDialogflowAction, IDialogflowMessage, IDialogflowPayload, LanguageCode} from '../enum/Dialogflow';
+import { DialogflowRequestType, IDialogflowAction, IDialogflowMessage, IDialogflowPayload, LanguageCode } from '../enum/Dialogflow';
 import { JobName } from '../enum/Scheduler';
+import { Logs } from '../enum/Logs';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
@@ -22,7 +23,7 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
             if (actionName) {
                 if (actionName === ActionIds.PERFORM_HANDOVER) {
                     if (!targetDepartment) {
-                        console.error('Failed to handover: Handover Department not configured');
+                        console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
                         return;
                     }
                     if (params) {

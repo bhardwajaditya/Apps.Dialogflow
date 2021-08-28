@@ -102,7 +102,7 @@ export class PostMessageSentHandler {
 
             const targetDepartment: string = await getAppSettingValue(this.read, AppSetting.FallbackTargetDepartment);
             if (!targetDepartment) {
-                console.error('Failed to handover: Handover Department not configured');
+                console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
                 return;
             }
             

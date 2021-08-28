@@ -22,7 +22,7 @@ export const incFallbackIntentAndSendResponse = async (app: IApp, read: IRead, m
     if (newFallbackCount === fallbackThreshold) {
         const targetDepartmentName: string | undefined = await getAppSettingValue(read, AppSetting.FallbackTargetDepartment);
         if (!targetDepartmentName) {
-            console.error('Failed to handover: Handover Department not configured');
+            console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
             return;
         }
 

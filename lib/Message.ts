@@ -141,6 +141,10 @@ export const createMessage = async (rid: string, read: IRead,  modify: IModify, 
     const { text, blocks, attachment, customFields, imageCardBlock } = message;
     let data = { room, sender };
 
+    if (!text && !blocks && !attachment && !customFields && !imageCardBlock) {
+        return;
+    }
+
     if (customFields) {
         data = Object.assign(data, { customFields });
     }

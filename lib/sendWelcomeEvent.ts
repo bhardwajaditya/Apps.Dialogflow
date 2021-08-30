@@ -1,6 +1,6 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
-import { AppSetting, DefaultMessage } from '../config/Settings';
+import { AppSetting } from '../config/Settings';
 import { DialogflowRequestType, IDialogflowCustomFields, IDialogflowMessage, LanguageCode } from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
 import { Dialogflow } from './Dialogflow';
@@ -29,8 +29,7 @@ export const sendWelcomeEventToDialogFlow = async (app: IApp, read: IRead,  modi
     } catch (error) {
         console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
         const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
-        await createMessage(rid, read, modify,
-            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage }, app);
+        await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
         return;
     }
 };

@@ -101,7 +101,7 @@ export const performHandover = async (app: IApp, modify: IModify, read: IRead, r
 
         console.error('Failed to handover', JSON.stringify(handoverFailure));
 
-        await createMessage(rid, read, modify, { text: offlineMessage ? offlineMessage : DefaultMessage.DEFAULT_DialogflowHandoverFailedMessage }, app);
+        await createMessage(rid, read, modify, { text: offlineMessage }, app);
 
         await closeChat(modify, read, rid);
         return;

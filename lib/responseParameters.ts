@@ -1,6 +1,6 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
-import { AppSetting, DefaultMessage } from '../config/Settings';
+import { AppSetting } from '../config/Settings';
 import {  DialogflowRequestType, IDialogflowMessage} from '../enum/Dialogflow';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { getAppSettingValue } from '../lib/Settings';
@@ -39,11 +39,7 @@ const sendChangeLanguageEvent = async (app: IApp, read: IRead, modify: IModify, 
 
         const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
 
-        await createMessage(rid,
-                            read,
-                            modify,
-                            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage }, 
-                            app);
+        await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
 
         return;
     }

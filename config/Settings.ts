@@ -170,6 +170,7 @@ export const settings: Array<ISetting> = [
         public: true,
         type: SettingType.STRING,
         packageValue: DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage,
+        value: DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage,
         i18nLabel: 'dialogflow_service_unavailable_message',
         i18nDescription: 'dialogflow_service_unavailable_message_description',
         required: false,

@@ -152,6 +152,7 @@ export const settings: Array<ISetting> = [
         public: true,
         type: SettingType.STRING,
         packageValue: 'Viasat Customer Support',
+        value: 'Viasat Customer Support',
         i18nLabel: 'target_department_for_handover',
         i18nDescription: 'target_department_for_handover_description',
         required: false,

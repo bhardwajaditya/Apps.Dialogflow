@@ -41,6 +41,11 @@ export class IncomingEndpoint extends ApiEndpoint {
                 break;
             case EndpointActionNames.HANDOVER:
                 const { actionData: { targetDepartment = '' } = {} } = endpointContent;
+                if (!targetDepartment) {
+                    console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
+                    return;
+                }
+                
                 const room = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
                 if (!room) { throw new Error(); }
                 const { visitor: { token: visitorToken } } = room;

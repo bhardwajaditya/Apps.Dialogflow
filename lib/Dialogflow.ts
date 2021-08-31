@@ -203,7 +203,7 @@ class DialogflowClass {
         const { session, queryResult } = response;
 
         if (queryResult) {
-            const { responseMessages, match: { matchType } } = queryResult;
+            const { responseMessages, match: { matchType }, diagnosticInfo } = queryResult;
 
             // Check array of event names from app settings for fallbacks
             const parsedMessage: IDialogflowMessage = {
@@ -214,17 +214,28 @@ class DialogflowClass {
             // customFields should be sent as the response of last message on client side
             const msgCustomFields: IDialogflowCustomFields = {};
 
-            let concatText = '';
+            let intentConcatText = '';
+            let pageConcatText = '';
 
             if (responseMessages) {
                 responseMessages.forEach((message) => {
                     const { text, payload: { quickReplies = null, customFields = null, action = null, isFallback = false } = {} } = message;
                     if (text) {
                         const { text: textMessageArray } = text;
-                        if (concatText !== '') {
-                            concatText += `\n \n`;
+
+                        const textOrigins = this.getTextOrigin(text, diagnosticInfo);
+
+                        if (textOrigins === 'intent') {
+                            if (intentConcatText !== '') {
+                                intentConcatText += `\n \n`;
+                            }
+                            intentConcatText += textMessageArray[0];
+                        } else {
+                            if (pageConcatText !== '') {
+                                pageConcatText += `\n \n`;
+                            }
+                            pageConcatText += textMessageArray[0];
                         }
-                        concatText += textMessageArray[0];
                     }
                     if (quickReplies) {
                         const { options, imagecards } = quickReplies;
@@ -250,8 +261,11 @@ class DialogflowClass {
                     }
                 });
 
-                if (concatText !== '') {
-                    messages.push({ text: concatText });
+                if (intentConcatText !== '') {
+                    messages.push({ text: intentConcatText });
+                }
+                if (pageConcatText !== '') {
+                    messages.push({ text: pageConcatText });
                 }
             }
 
@@ -412,6 +426,27 @@ class DialogflowClass {
         privateKey = privateKey.trim().replace(/\\n/gm, '\n');
         // sign the signature then in the result replace + with -    |    / with _
         return sign.sign(privateKey, DialogflowJWT.BASE_64).replace(/\+/g, '-').replace(/\//g, '_');
+    }
+
+    private getTextOrigin(text: any, info: any) {
+        const executionStep = info['Execution Sequence'][1]['Step 2'];
+
+        if (executionStep) {
+
+            const intentResponses = executionStep.FunctionExecution ? executionStep.FunctionExecution.Responses : null;
+
+            if (intentResponses) {
+                for (const response of intentResponses) {
+                    if (response.text) {
+                        if (response.text.text[0] === text.text[0]) {
+                            return 'intent';
+                        }
+                    }
+                }
+            }
+        }
+
+        return 'page';
     }
 }
 

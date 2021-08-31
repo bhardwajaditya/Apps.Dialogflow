@@ -214,8 +214,6 @@ class DialogflowClass {
         if (queryResult) {
             const { responseMessages, match: { matchType }, diagnosticInfo } = queryResult;
 
-            console.log(diagnosticInfo);
-
             // Check array of event names from app settings for fallbacks
             const parsedMessage: IDialogflowMessage = {
                 isFallback: false,
@@ -447,9 +445,6 @@ class DialogflowClass {
             const intentResponses = executionStep.FunctionExecution ? executionStep.FunctionExecution.Responses : null;
 
             if (intentResponses) {
-                console.log('inside intentResponses');
-                console.log(executionStep);
-                console.log(text);
                 for (const response of intentResponses) {
                     if (response.text) {
                         if (response.text.text[0] === text.text[0]) {

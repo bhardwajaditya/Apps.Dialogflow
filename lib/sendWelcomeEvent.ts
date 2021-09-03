@@ -8,12 +8,14 @@ import { createDialogflowMessage, createMessage } from './Message';
 import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
 import { getAppSettingValue } from './Settings';
 
+export const WELCOME_EVENT_NAME =  'Welcome';
+
 export const sendWelcomeEventToDialogFlow = async (app: IApp, read: IRead,  modify: IModify, persistence: IPersistence, http: IHttp, rid: string, visitorToken: string, livechatData: any) => {
     try {
         const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
         const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
         const event = {
-            name: 'Welcome',
+            name: WELCOME_EVENT_NAME,
             languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
             parameters: {...(livechatData || {}), roomId: rid, visitorToken} || {},
         };

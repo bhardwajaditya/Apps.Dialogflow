@@ -31,8 +31,7 @@ export class OnAgentUnassignedHandler {
         if (livechatRoom.servedBy.username === DialogflowBotUsername && allowChatBotSession === false) {
                 const offlineMessage: string = await getAppSettingValue(this.read, AppSetting.DialogflowServiceUnavailableMessage);
 
-                await createMessage(this.app, livechatRoom.id, this.read, this.modify,
-                    { text: offlineMessage ? offlineMessage : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
+                await createMessage(livechatRoom.id, this.read, this.modify, { text: offlineMessage }, this.app);
 
                 await closeChat(this.modify, this.read, rid);
             }

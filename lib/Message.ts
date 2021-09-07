@@ -1,14 +1,13 @@
-import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
+import { IModify, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatRoom, IVisitor } from '@rocket.chat/apps-engine/definition/livechat';
 import { BlockElementType, BlockType, ButtonStyle, IActionsBlock, IBlock, IButtonElement, IImageBlock, ITextObject, TextObjectType } from '@rocket.chat/apps-engine/definition/uikit';
 import { IUser } from '@rocket.chat/apps-engine/definition/users';
 import { AppSetting } from '../config/Settings';
 import { ActionIds } from '../enum/ActionIds';
-import { IDialogflowImageCard, IDialogflowMessage, IDialogflowPayload, IDialogflowQuickReplies, IDialogflowQuickReplyOptions } from '../enum/Dialogflow';
+import { IDialogflowMessage, IDialogflowQuickReplies, IDialogflowQuickReplyOptions } from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
 import { uuid } from './Helper';
-import { handlePayloadActions } from './payloadAction';
 import { getAppSettingValue } from './Settings';
 
 export const createDialogflowMessage = async (rid: string, read: IRead,  modify: IModify, dialogflowMessage: IDialogflowMessage, app?: IApp ): Promise<any> => {

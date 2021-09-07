@@ -49,7 +49,7 @@ export class PostMessageSentHandler {
             }
             await this.handleClosedByVisitor(rid, this.read);
             await closeChat(this.modify, this.read, rid, this.persistence);
-            // return;
+            return;
         }
 
         if (!type || type !== RoomType.LIVE_CHAT) {

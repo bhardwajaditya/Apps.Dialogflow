@@ -64,9 +64,6 @@ export class IncomingEndpoint extends ApiEndpoint {
 
                 try {
                     const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, sessionId, event, DialogflowRequestType.EVENT);
-                    const livechatRoom = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
-                    if (!livechatRoom) { throw new Error(); }
-                    const { visitor: { token: vToken } } = livechatRoom;
                     //widechat specific change
                     // await createDialogflowMessage(sessionId, read, modify, response, this.app);
                     // await handlePayloadActions(this.app, read, modify, http, persistence, sessionId, vToken, response);

@@ -13,7 +13,7 @@ import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
 
 export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IModify, http: IHttp, persistence: IPersistence, rid: string, visitorToken: string, dialogflowMessage: IDialogflowMessage) => {
-    const { messages = [], isFallback = false } = dialogflowMessage;
+    const { messages = [] } = dialogflowMessage;
     for (const message of messages) {
         const { action = null } = message as IDialogflowPayload;
         if (action) {
@@ -77,15 +77,6 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                     }
                 }
             }
-        } else {
-            // widechat specific
-            const textMessages: Array<string | IDialogflowQuickReplies | IDialogflowPayload |  IDialogflowImageCard> = [];
-            textMessages.push(message);
-            const messagesToProcess: IDialogflowMessage = {
-                messages: textMessages,
-                isFallback: isFallback,
-            };
-            await createDialogflowMessage(rid, read, modify, messagesToProcess, app);
         }
     }
 };
@@ -115,5 +106,23 @@ const logActionPayload = (rid: string, action: IDialogflowAction) => {
     const logData = {dialogflowSessionID: rid, action: JSON.parse(JSON.stringify(action))};
     if (logData.action.params) {
         logData.action.params.customDetail = '';
+    }
+};
+
+export const  handleResponse = async (app: IApp, read: IRead,  modify: IModify, http: IHttp, persistence: IPersistence, rid: string, visitorToken: string, dialogflowMessage: IDialogflowMessage) => {
+    const { messages = [], isFallback = false } = dialogflowMessage;
+    for (const message of messages) {
+        const { action = null } = message as IDialogflowPayload;
+        const textMessages: Array<string | IDialogflowQuickReplies | IDialogflowPayload |  IDialogflowImageCard> = [];
+        textMessages.push(message);
+        const messagesToProcess: IDialogflowMessage = {
+            messages: textMessages,
+            isFallback,
+        };
+        if (action) {
+            await handlePayloadActions(app, read, modify, http, persistence, rid, visitorToken, messagesToProcess);
+        } else {
+            await createDialogflowMessage(rid, read, modify, messagesToProcess, app);
+        }
     }
 };

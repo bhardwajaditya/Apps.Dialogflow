@@ -9,7 +9,8 @@ import { Logs } from '../enum/Logs';
 import { botTypingListener, removeBotTypingListener } from '../lib//BotTyping';
 import { Dialogflow } from '../lib/Dialogflow';
 import { createDialogflowMessage, createMessage } from '../lib/Message';
-import { handlePayloadActions } from '../lib/payloadAction';
+import { handleResponse } from '../lib/payloadAction';
+// import { handlePayloadActions } from '../lib/payloadAction';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
@@ -48,7 +49,7 @@ export class PostMessageSentHandler {
             }
             await this.handleClosedByVisitor(rid, this.read);
             await closeChat(this.modify, this.read, rid, this.persistence);
-            return;
+            // return;
         }
 
         if (!type || type !== RoomType.LIVE_CHAT) {
@@ -116,8 +117,9 @@ export class PostMessageSentHandler {
             return incFallbackIntentAndSendResponse(this.app, this.read, this.modify, rid, createResponseMessage);
         }
 
-        // await createResponseMessage(); widechat specific
-        await handlePayloadActions(this.app, this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
+        // await createResponseMessage();
+        // await handlePayloadActions(this.app, this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
+        await handleResponse(this.app, this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
         await handleParameters(this.app, this.read, this.modify, this.persistence, this.http, rid, visitorToken, response);
         await this.handleBotTyping(rid, response);
 

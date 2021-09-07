@@ -223,9 +223,9 @@ class DialogflowClass {
                     if (text) {
                         const { text: textMessageArray } = text;
 
-                        const textOrigins = this.getTextOrigin(text, diagnosticInfo);
+                        const sourceType = this.getSourceType(text, diagnosticInfo);
 
-                        if (textOrigins === 'intent') {
+                        if (sourceType === 'intent') {
                             if (intentConcatText !== '') {
                                 intentConcatText += `\n \n`;
                             }
@@ -428,8 +428,8 @@ class DialogflowClass {
         return sign.sign(privateKey, DialogflowJWT.BASE_64).replace(/\+/g, '-').replace(/\//g, '_');
     }
 
-    private getTextOrigin(text: any, info: any) {
-        const executionStep = info['Execution Sequence'][1]['Step 2'];
+    private getSourceType(text: any, info: any) {
+        const executionStep = info['Execution Sequence'][2] ? info['Execution Sequence'][2]['Step 3'] : info['Execution Sequence'][1]['Step 2'];
 
         if (executionStep) {
 
@@ -438,7 +438,7 @@ class DialogflowClass {
             if (intentResponses) {
                 for (const response of intentResponses) {
                     if (response.text) {
-                        if (response.text.text[0] === text.text[0]) {
+                        if (response.text.text[0] === text.text[0] && response.responseType === 'HANDLER_PROMPT') {
                             return 'intent';
                         }
                     }

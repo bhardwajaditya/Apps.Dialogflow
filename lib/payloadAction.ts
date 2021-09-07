@@ -1,7 +1,7 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
-import { AppSetting, DefaultMessage } from '../config/Settings';
+import { AppSetting } from '../config/Settings';
 import { ActionIds } from '../enum/ActionIds';
 import {  DialogflowRequestType, IDialogflowAction, IDialogflowImageCard, IDialogflowMessage, IDialogflowPayload, IDialogflowQuickReplies, LanguageCode} from '../enum/Dialogflow';
 import { JobName } from '../enum/Scheduler';
@@ -56,9 +56,7 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                         await modify.getScheduler().scheduleOnce(task);
                     } catch (error) {
                         const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
-                        await createMessage(rid, read, modify,
-                            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage },
-                            app);
+                        await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
                         return;
                     }
 
@@ -91,13 +89,7 @@ const sendChangeLanguageEvent = async (app: IApp, read: IRead, modify: IModify, 
       } catch (error) {
 
         const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
-
-        await createMessage(rid,
-                            read,
-                            modify,
-                            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage },
-                            app);
-
+        await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
         return;
     }
 };

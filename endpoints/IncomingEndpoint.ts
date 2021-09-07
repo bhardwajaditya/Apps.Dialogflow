@@ -11,6 +11,7 @@ import { createDialogflowMessage } from '../lib/Message';
 import { handleResponse } from '../lib/payloadAction';
 // import { handlePayloadActions } from '../lib/payloadAction';
 import { closeChat, performHandover } from '../lib/Room';
+import { sendWelcomeEventToDialogFlow, WELCOME_EVENT_NAME } from '../lib/sendWelcomeEvent';
 
 export class IncomingEndpoint extends ApiEndpoint {
     public path = 'incoming';
@@ -50,6 +51,16 @@ export class IncomingEndpoint extends ApiEndpoint {
             case EndpointActionNames.TRIGGER_EVENT:
                 const { actionData: { event = null } = {} } = endpointContent;
                 if (!event) { throw new Error(Logs.INVALID_EVENT_DATA); }
+
+                const livechatRoom = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
+                if (!livechatRoom) { throw new Error(); }
+
+                const { visitor: { token: vToken, livechatData } } = livechatRoom;
+
+                if (event && event.name === WELCOME_EVENT_NAME) {
+                    await sendWelcomeEventToDialogFlow(this.app, read, modify, persistence, http, sessionId, vToken, livechatData);
+                    return;
+                }
 
                 try {
                     const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, sessionId, event, DialogflowRequestType.EVENT);

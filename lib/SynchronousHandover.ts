@@ -1,10 +1,11 @@
 import { IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
-import { AppSetting } from '../config/Settings';
+import { AppSetting, DefaultMessage } from '../config/Settings';
 import { Logs } from '../enum/Logs';
 import { performHandover, updateRoomCustomFields } from './Room';
 import { getAppSettingValue } from './Settings';
+import { createDialogflowMessage, createMessage } from '../lib/Message';
 
 export const incFallbackIntentAndSendResponse = async (app: IApp, read: IRead, modify: IModify, sessionId: string, dialogflowMessage?: () => any) => {
     const fallbackThreshold = (await getAppSettingValue(read, AppSetting.DialogflowFallbackResponsesLimit)) as number;
@@ -21,9 +22,12 @@ export const incFallbackIntentAndSendResponse = async (app: IApp, read: IRead, m
 
     if (newFallbackCount === fallbackThreshold) {
         const targetDepartmentName: string | undefined = await getAppSettingValue(read, AppSetting.FallbackTargetDepartment);
+
         if (!targetDepartmentName) {
             console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
-            return;
+            const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
+            return await createMessage(app, sessionId, read, modify,
+                { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
         }
 
         // perform handover

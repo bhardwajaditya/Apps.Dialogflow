@@ -17,6 +17,7 @@ import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
 import { getAppSettingValue } from '../lib/Settings';
 import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
 import { handleTimeout } from '../lib/Timeout';
+import { getError } from '../lib/Helper';
 
 export class PostMessageSentHandler {
     constructor(private readonly app: IApp,
@@ -91,8 +92,8 @@ export class PostMessageSentHandler {
             await botTypingListener(this.modify, rid, DialogflowBotUsername);
             response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, text, DialogflowRequestType.MESSAGE));
         } catch (error) {
-            this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
-            console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
+            this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getError(error).message}`);
+            console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getError(error).message}`);
 
             const serviceUnavailable: string = await getAppSettingValue(this.read, AppSetting.DialogflowServiceUnavailableMessage);
             await createMessage(this.app,
@@ -166,7 +167,8 @@ export class PostMessageSentHandler {
                     languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
                 }, DialogflowRequestType.EVENT));
             } catch (error) {
-                this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
+                this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getError(error).message}`);
+                console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getError(error).message}`);
             }
         }
     }

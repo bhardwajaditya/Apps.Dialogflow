@@ -10,6 +10,7 @@ import { createHttpResponse } from '../lib/Http';
 import { createDialogflowMessage } from '../lib/Message';
 import { handlePayloadActions } from '../lib/payloadAction';
 import { closeChat, performHandover } from '../lib/Room';
+import { getError } from '../lib/Helper';
 
 export class IncomingEndpoint extends ApiEndpoint {
     public path = 'incoming';
@@ -63,8 +64,9 @@ export class IncomingEndpoint extends ApiEndpoint {
                     await createDialogflowMessage(this.app, sessionId, read, modify, response);
                     await handlePayloadActions(this.app, read, modify, http, persistence, sessionId, vToken, response);
                 } catch (error) {
-                    this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
-                    throw new Error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
+                    this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getError(error).message}`);
+                    console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getError(error).message}`);
+                    throw new Error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getError(error).message}`);
                 }
                 break;
             case EndpointActionNames.SEND_MESSAGE:

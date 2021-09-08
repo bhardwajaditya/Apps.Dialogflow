@@ -24,7 +24,9 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                 if (actionName === ActionIds.PERFORM_HANDOVER) {
                     if (!targetDepartment) {
                         console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
-                        return;
+                        const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
+                        return await createMessage(app, rid, read, modify,
+                            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
                     }
                     if (params) {
                         const customFields: any = {};

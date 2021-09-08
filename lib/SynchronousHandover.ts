@@ -26,8 +26,7 @@ export const incFallbackIntentAndSendResponse = async (app: IApp, read: IRead, m
         if (!targetDepartmentName) {
             console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
             const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
-            return await createMessage(app, sessionId, read, modify,
-                { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
+            return await createMessage(sessionId, read, modify, { text: serviceUnavailable }, app);
         }
 
         // perform handover

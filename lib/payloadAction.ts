@@ -1,7 +1,7 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
-import { AppSetting, DefaultMessage } from '../config/Settings';
+import { AppSetting } from '../config/Settings';
 import { ActionIds } from '../enum/ActionIds';
 import { DialogflowRequestType, IDialogflowAction, IDialogflowMessage, IDialogflowPayload, LanguageCode } from '../enum/Dialogflow';
 import { JobName } from '../enum/Scheduler';
@@ -53,21 +53,17 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                     await sendWelcomeEventToDialogFlow(app, read, modify, persistence, http, rid, visitorToken, livechatData);
                 } else if (actionName === ActionIds.SET_TIMEOUT) {
 
-                    const event = { name: params.eventName, languageCode: LanguageCode.EN, parameters: {} };
-                    const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, rid, event, DialogflowRequestType.EVENT);
-
                     const task = {
                         id: JobName.EVENT_SCHEDULER,
                         when: `${Number(params.time)} seconds`,
-                        data: {response, rid},
+                        data: { eventName: params.eventName , rid },
                     };
 
                     try {
                         await modify.getScheduler().scheduleOnce(task);
                     } catch (error) {
                         const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
-                        await createMessage(app, rid, read, modify,
-                            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
+                        await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
                         return;
                     }
 
@@ -96,16 +92,11 @@ const sendChangeLanguageEvent = async (app: IApp, read: IRead, modify: IModify, 
         const event = { name: 'ChangeLanguage', languageCode, parameters:  {} };
         const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, rid, event, DialogflowRequestType.EVENT);
 
-        await createDialogflowMessage(app, rid, read, modify, response);
+        await createDialogflowMessage(rid, read, modify, response, app);
       } catch (error) {
 
         const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
-
-        await createMessage(app, rid,
-                            read,
-                            modify,
-                            { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
-
+        await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
         return;
     }
 };

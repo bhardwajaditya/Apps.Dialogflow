@@ -11,6 +11,7 @@ import { createDialogflowMessage } from '../lib/Message';
 import { handlePayloadActions } from '../lib/payloadAction';
 import { closeChat, performHandover } from '../lib/Room';
 import { getError } from '../lib/Helper';
+import { sendWelcomeEventToDialogFlow, WELCOME_EVENT_NAME } from '../lib/sendWelcomeEvent';
 
 export class IncomingEndpoint extends ApiEndpoint {
     public path = 'incoming';
@@ -56,12 +57,19 @@ export class IncomingEndpoint extends ApiEndpoint {
                 const { actionData: { event = null } = {} } = endpointContent;
                 if (!event) { throw new Error(Logs.INVALID_EVENT_DATA); }
 
+                const livechatRoom = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
+                if (!livechatRoom) { throw new Error(); }
+
+                const { visitor: { token: vToken, livechatData } } = livechatRoom;
+
+                if (event && event.name === WELCOME_EVENT_NAME) {
+                    await sendWelcomeEventToDialogFlow(this.app, read, modify, persistence, http, sessionId, vToken, livechatData);
+                    return;
+                }
+
                 try {
                     const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, sessionId, event, DialogflowRequestType.EVENT);
-                    const livechatRoom = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
-                    if (!livechatRoom) { throw new Error(); }
-                    const { visitor: { token: vToken } } = livechatRoom;
-                    await createDialogflowMessage(this.app, sessionId, read, modify, response);
+                    await createDialogflowMessage(sessionId, read, modify, response, this.app);
                     await handlePayloadActions(this.app, read, modify, http, persistence, sessionId, vToken, response);
                 } catch (error) {
                     this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getError(error).message}`);
@@ -72,7 +80,7 @@ export class IncomingEndpoint extends ApiEndpoint {
             case EndpointActionNames.SEND_MESSAGE:
                 const { actionData: { messages = null } = {} } = endpointContent;
                 if (!messages) { throw new Error(Logs.INVALID_MESSAGES); }
-                await createDialogflowMessage(this.app, sessionId, read, modify, { messages, isFallback: false });
+                await createDialogflowMessage(sessionId, read, modify, { messages, isFallback: false }, this.app);
                 break;
             default:
                 throw new Error(Logs.INVALID_ENDPOINT_ACTION);

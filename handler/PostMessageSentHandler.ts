@@ -2,7 +2,7 @@ import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/de
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatMessage, ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { RoomType } from '@rocket.chat/apps-engine/definition/rooms';
-import { AppSetting, DefaultMessage } from '../config/Settings';
+import { AppSetting } from '../config/Settings';
 import { DialogflowRequestType, IDialogflowMessage, IDialogflowQuickReplies, LanguageCode, Message } from '../enum/Dialogflow';
 
 import { Logs } from '../enum/Logs';
@@ -96,11 +96,7 @@ export class PostMessageSentHandler {
             console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getError(error).message}`);
 
             const serviceUnavailable: string = await getAppSettingValue(this.read, AppSetting.DialogflowServiceUnavailableMessage);
-            await createMessage(this.app,
-                                rid,
-                                this.read,
-                                this.modify,
-                                { text: serviceUnavailable ? serviceUnavailable : DefaultMessage.DEFAULT_DialogflowServiceUnavailableMessage });
+            await createMessage(rid, this.read, this.modify, { text: serviceUnavailable }, this.app);
 
             const targetDepartment: string = await getAppSettingValue(this.read, AppSetting.FallbackTargetDepartment);
             if (!targetDepartment) {
@@ -114,7 +110,7 @@ export class PostMessageSentHandler {
             return;
         }
 
-        const createResponseMessage = async () => await createDialogflowMessage(this.app, rid, this.read, this.modify, response);
+        const createResponseMessage = async () => await createDialogflowMessage(rid, this.read, this.modify, response, this.app);
 
         // synchronous handover check
         const { isFallback } = response;

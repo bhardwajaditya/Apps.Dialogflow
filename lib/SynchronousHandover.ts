@@ -1,11 +1,11 @@
 import { IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
-import { AppSetting, DefaultMessage } from '../config/Settings';
+import { AppSetting } from '../config/Settings';
 import { Logs } from '../enum/Logs';
 import { performHandover, updateRoomCustomFields } from './Room';
 import { getAppSettingValue } from './Settings';
-import { createDialogflowMessage, createMessage } from '../lib/Message';
+import { createMessage } from '../lib/Message';
 
 export const incFallbackIntentAndSendResponse = async (app: IApp, read: IRead, modify: IModify, sessionId: string, dialogflowMessage?: () => any) => {
     const fallbackThreshold = (await getAppSettingValue(read, AppSetting.DialogflowFallbackResponsesLimit)) as number;

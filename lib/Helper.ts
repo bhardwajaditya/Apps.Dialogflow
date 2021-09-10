@@ -2,7 +2,8 @@ import { Base64 } from '../enum/Dialogflow';
 
 export const getError = (error: any) => {
     if (typeof error === 'object') {
-        return JSON.stringify(error);
+        const errorObject = Object.getOwnPropertyNames(error).reduce((acc, key) => { acc[key] = error[key]; return acc; }, {});
+        return JSON.stringify(errorObject);
     }
     return error;
 };

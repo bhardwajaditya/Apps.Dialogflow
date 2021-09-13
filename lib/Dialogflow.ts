@@ -437,10 +437,8 @@ class DialogflowClass {
 
             if (intentResponses) {
                 for (const response of intentResponses) {
-                    if (response.text) {
-                        if (response.text.text[0] === text.text[0] && response.responseType === 'HANDLER_PROMPT') {
-                            return 'intent';
-                        }
+                    if (response.text && response.text.text[0] === text.text[0] && response.responseType === 'HANDLER_PROMPT') {
+                        return 'intent';
                     }
                 }
             }

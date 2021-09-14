@@ -17,6 +17,7 @@ import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
 import { getAppSettingValue } from '../lib/Settings';
 import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
 import { handleTimeout } from '../lib/Timeout';
+import { getErrorMessage } from '../lib/Helper';
 
 export class PostMessageSentHandler {
     constructor(private readonly app: IApp,
@@ -91,13 +92,19 @@ export class PostMessageSentHandler {
             await botTypingListener(this.modify, rid, DialogflowBotUsername);
             response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, text, DialogflowRequestType.MESSAGE));
         } catch (error) {
-            this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
+            this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getErrorMessage(error)}`);
+            console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getErrorMessage(error)}`);
 
             const serviceUnavailable: string = await getAppSettingValue(this.read, AppSetting.DialogflowServiceUnavailableMessage);
             await createMessage(rid, this.read, this.modify, { text: serviceUnavailable }, this.app);
 
-            updateRoomCustomFields(rid, { isChatBotFunctional: false }, this.read, this.modify);
             const targetDepartment: string = await getAppSettingValue(this.read, AppSetting.FallbackTargetDepartment);
+            if (!targetDepartment) {
+                console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
+                return;
+            }
+            
+            updateRoomCustomFields(rid, { isChatBotFunctional: false }, this.read, this.modify);
             await performHandover(this.app, this.modify, this.read, rid, visitorToken, targetDepartment);
 
             return;
@@ -156,7 +163,8 @@ export class PostMessageSentHandler {
                     languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
                 }, DialogflowRequestType.EVENT));
             } catch (error) {
-                this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
+                this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getErrorMessage(error)}`);
+                console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getErrorMessage(error)}`);
             }
         }
     }

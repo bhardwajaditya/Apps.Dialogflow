@@ -23,7 +23,6 @@ class DialogflowClass {
         const dialogFlowVersion = await getAppSettingValue(read, AppSetting.DialogflowVersion);
 
         const room = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
-        const { id: rid, visitor: { livechatData, token: visitorToken  } } = room;
 
         const serverURL = await this.getServerURL(read, modify, http, sessionId);
 
@@ -40,18 +39,10 @@ class DialogflowClass {
             };
 
             const queryParams = {
-                timeZone: 'America/Los_Angeles',
-                parameters:  {
+                timeZone: 'America/Los_Angeles', parameters:  {
                     username: room.visitor.username,
-                    roomId: rid,
-                    visitorToken,
-                    ...(livechatData || {}),
                 },
             };
-
-            if (requestType === DialogflowRequestType.EVENT && typeof request !== 'string') {
-                queryParams.parameters = {...queryParams.parameters, ...(request.parameters ? request.parameters : {})};
-            }
 
             const accessToken = await this.getAccessToken(read, modify, http, sessionId);
             if (!accessToken) { throw Error(Logs.ACCESS_TOKEN_ERROR); }
@@ -212,7 +203,7 @@ class DialogflowClass {
         const { session, queryResult } = response;
 
         if (queryResult) {
-            const { responseMessages, match: { matchType } } = queryResult;
+            const { responseMessages, match: { matchType }, diagnosticInfo } = queryResult;
 
             // Check array of event names from app settings for fallbacks
             const parsedMessage: IDialogflowMessage = {
@@ -223,12 +214,28 @@ class DialogflowClass {
             // customFields should be sent as the response of last message on client side
             const msgCustomFields: IDialogflowCustomFields = {};
 
+            let intentConcatText = '';
+            let pageConcatText = '';
+
             if (responseMessages) {
                 responseMessages.forEach((message) => {
                     const { text, payload: { quickReplies = null, customFields = null, action = null, isFallback = false } = {} } = message;
                     if (text) {
                         const { text: textMessageArray } = text;
-                        messages.push({ text: textMessageArray[0] });
+
+                        const sourceType = this.getSourceType(text, diagnosticInfo);
+
+                        if (sourceType === 'intent') {
+                            if (intentConcatText !== '') {
+                                intentConcatText += `\n \n`;
+                            }
+                            intentConcatText += textMessageArray[0];
+                        } else {
+                            if (pageConcatText !== '') {
+                                pageConcatText += `\n \n`;
+                            }
+                            pageConcatText += textMessageArray[0];
+                        }
                     }
                     if (quickReplies) {
                         const { options, imagecards } = quickReplies;
@@ -253,6 +260,13 @@ class DialogflowClass {
                         parsedMessage.isFallback = isFallback;
                     }
                 });
+
+                if (intentConcatText !== '') {
+                    messages.push({ text: intentConcatText });
+                }
+                if (pageConcatText !== '') {
+                    messages.push({ text: pageConcatText });
+                }
             }
 
             if (Object.keys(msgCustomFields).length > 0) {
@@ -412,6 +426,25 @@ class DialogflowClass {
         privateKey = privateKey.trim().replace(/\\n/gm, '\n');
         // sign the signature then in the result replace + with -    |    / with _
         return sign.sign(privateKey, DialogflowJWT.BASE_64).replace(/\+/g, '-').replace(/\//g, '_');
+    }
+
+    private getSourceType(text: any, info: any) {
+        const executionStep = info['Execution Sequence'][2] ? info['Execution Sequence'][2]['Step 3'] : info['Execution Sequence'][1]['Step 2'];
+
+        if (executionStep) {
+
+            const intentResponses = executionStep.FunctionExecution ? executionStep.FunctionExecution.Responses : null;
+
+            if (intentResponses) {
+                for (const response of intentResponses) {
+                    if (response.text && response.text.text[0] === text.text[0] && response.responseType === 'HANDLER_PROMPT') {
+                        return 'intent';
+                    }
+                }
+            }
+        }
+
+        return 'page';
     }
 }
 

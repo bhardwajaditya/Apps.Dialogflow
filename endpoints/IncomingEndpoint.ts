@@ -11,6 +11,7 @@ import { createDialogflowMessage } from '../lib/Message';
 import { handleResponse } from '../lib/payloadAction';
 // import { handlePayloadActions } from '../lib/payloadAction';
 import { closeChat, performHandover } from '../lib/Room';
+import { getError } from '../lib/Helper';
 import { sendWelcomeEventToDialogFlow, WELCOME_EVENT_NAME } from '../lib/sendWelcomeEvent';
 
 export class IncomingEndpoint extends ApiEndpoint {
@@ -43,6 +44,11 @@ export class IncomingEndpoint extends ApiEndpoint {
                 break;
             case EndpointActionNames.HANDOVER:
                 const { actionData: { targetDepartment = '' } = {} } = endpointContent;
+                if (!targetDepartment) {
+                    console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
+                    return;
+                }
+                
                 const room = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
                 if (!room) { throw new Error(); }
                 const { visitor: { token: visitorToken } } = room;
@@ -69,8 +75,9 @@ export class IncomingEndpoint extends ApiEndpoint {
                     // await handlePayloadActions(this.app, read, modify, http, persistence, sessionId, vToken, response);
                     await handleResponse(this.app, read, modify, http, persistence, sessionId, vToken, response);
                 } catch (error) {
-                    this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
-                    throw new Error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${error.message}`);
+                    this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getError(error)}`);
+                    console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getError(error)}`);
+                    throw new Error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getError(error)}`);
                 }
                 break;
             case EndpointActionNames.SEND_MESSAGE:

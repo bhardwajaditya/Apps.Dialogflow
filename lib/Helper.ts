@@ -7,6 +7,13 @@ export const getError = (error: any) => {
     }
     return error;
 };
+export const getErrorMessage = (error: any) => {
+    if (typeof error === 'object') {
+        const errorObject = Object.getOwnPropertyNames(error).reduce((acc, key) => { acc[key] = error[key]; return acc; }, {});
+        return JSON.stringify(errorObject['message']);
+    }
+    return error;
+};
 
 export const base64urlEncode = (str: any) => {
     const utf8str = unescape(encodeURIComponent(str));

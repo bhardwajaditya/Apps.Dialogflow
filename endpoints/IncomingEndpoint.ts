@@ -72,9 +72,10 @@ export class IncomingEndpoint extends ApiEndpoint {
                     await createDialogflowMessage(sessionId, read, modify, response, this.app);
                     await handlePayloadActions(this.app, read, modify, http, persistence, sessionId, vToken, response);
                 } catch (error) {
-                    this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getError(error)}`);
-                    console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getError(error)}`);
-                    throw new Error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getError(error)}`);
+                    const errorContent = `${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${sessionId} } ${getError(error)}`;
+                    this.app.getLogger().error(errorContent);
+                    console.error(errorContent);
+                    throw new Error(errorContent);
                 }
                 break;
             case EndpointActionNames.SEND_MESSAGE:

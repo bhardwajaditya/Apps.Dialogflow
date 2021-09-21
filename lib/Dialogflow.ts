@@ -54,10 +54,11 @@ class DialogflowClass {
 
             try {
                 const response = await http.post(serverURL, httpRequestContent);
-                return await this.parseCXRequest(read, response.data);
+                return await this.parseCXRequest(read, response.data, sessionId);
             } catch (error) {
-                console.error(Logs.HTTP_REQUEST_ERROR, getError(error));
-                throw new Error(`${ Logs.HTTP_REQUEST_ERROR }: ${error}`);
+                const errorContent = `${Logs.HTTP_REQUEST_ERROR}: { roomID: ${sessionId} } ${getError(error)}`;
+                console.error(errorContent);
+                throw new Error(errorContent);
             }
         } else {
 
@@ -78,15 +79,16 @@ class DialogflowClass {
 
             try {
                 const response = await http.post(serverURL, httpRequestContent);
-                return this.parseRequest(response.data);
+                return this.parseRequest(response.data, sessionId);
             } catch (error) {
-                console.error(Logs.HTTP_REQUEST_ERROR, getError(error));
-                throw new Error(`${ Logs.HTTP_REQUEST_ERROR }: ${error}`);
+                const errorContent = `${Logs.HTTP_REQUEST_ERROR}: { roomID: ${sessionId} } ${getError(error)}`;
+                console.error(errorContent);
+                throw new Error(errorContent);
             }
         }
     }
 
-    public async generateNewAccessToken(http: IHttp, clientEmail: string, privateKey: string): Promise<IDialogflowAccessToken> {
+    public async generateNewAccessToken(http: IHttp, clientEmail: string, privateKey: string, sessionId?: string): Promise<IDialogflowAccessToken> {
         const authUrl = DialogflowUrl.AUTHENTICATION_SERVER_URL;
         const jwt = this.getJWT(clientEmail, privateKey);
 
@@ -100,7 +102,11 @@ class DialogflowClass {
         try {
             const response = await http.post(authUrl, httpRequestContent);
 
-            if (!response.content) { throw new Error(Logs.INVALID_RESPONSE_FROM_DIALOGFLOW); }
+            if (!response.content) {
+                const errorContent = `${Logs.INVALID_RESPONSE_FROM_DIALOGFLOW}: { roomID: ${sessionId || 'N/A'} }`;
+                console.error(errorContent);
+                throw new Error(errorContent);
+            }
             const responseJSON = JSON.parse(response.content);
 
             const { access_token } = responseJSON;
@@ -122,13 +128,18 @@ class DialogflowClass {
                 throw Error(Logs.ACCESS_TOKEN_ERROR);
             }
         } catch (error) {
-            console.error(Logs.HTTP_REQUEST_ERROR, getError(error));
-            throw new Error(`${Logs.HTTP_REQUEST_ERROR}: ${error}`);
+            const errorContent = `${Logs.HTTP_REQUEST_ERROR}: { roomID: ${sessionId || 'N/A'} } ${getError(error)}`;
+            console.error(errorContent);
+            throw new Error(errorContent);
         }
     }
 
-    public parseRequest(response: any): IDialogflowMessage {
-        if (!response) { throw new Error(Logs.INVALID_RESPONSE_FROM_DIALOGFLOW_CONTENT_UNDEFINED); }
+    public parseRequest(response: any, sessionId?: string): IDialogflowMessage {
+        if (!response) {
+            const errorContent = `${Logs.INVALID_RESPONSE_FROM_DIALOGFLOW_CONTENT_UNDEFINED}: { roomID: ${sessionId || 'N/A'} }`;
+            console.error(errorContent);
+            throw new Error(errorContent);
+        }
 
         const { session, queryResult } = response;
         if (queryResult) {
@@ -197,8 +208,12 @@ class DialogflowClass {
         }
     }
 
-    public async parseCXRequest(read: IRead, response: any): Promise<IDialogflowMessage> {
-        if (!response) { throw new Error(Logs.INVALID_RESPONSE_FROM_DIALOGFLOW_CONTENT_UNDEFINED); }
+    public async parseCXRequest(read: IRead, response: any, sessionId: string): Promise<IDialogflowMessage> {
+        if (!response) {
+            const errorContent = `${Logs.INVALID_RESPONSE_FROM_DIALOGFLOW_CONTENT_UNDEFINED}: { roomID: ${sessionId} }`;
+            console.error(errorContent);
+            throw new Error(errorContent);
+        }
 
         const { session, queryResult } = response;
 
@@ -361,7 +376,7 @@ class DialogflowClass {
 
         try {
             // get a new access token
-            const accessToken: IDialogflowAccessToken =  await this.generateNewAccessToken(http, clientEmail, privateKey);
+            const accessToken: IDialogflowAccessToken =  await this.generateNewAccessToken(http, clientEmail, privateKey, sessionId);
 
             // save this access Token for future use
             await updateRoomCustomFields(sessionId, { accessToken }, read, modify);

@@ -92,8 +92,9 @@ export class PostMessageSentHandler {
             await botTypingListener(this.modify, rid, DialogflowBotUsername);
             response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, text, DialogflowRequestType.MESSAGE));
         } catch (error) {
-            this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getErrorMessage(error)}`);
-            console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getErrorMessage(error)}`);
+            const errorContent = `${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${rid} } ${getErrorMessage(error)}`;
+            this.app.getLogger().error(errorContent);
+            console.error(errorContent);
 
             const serviceUnavailable: string = await getAppSettingValue(this.read, AppSetting.DialogflowServiceUnavailableMessage);
             await createMessage(rid, this.read, this.modify, { text: serviceUnavailable }, this.app);
@@ -163,8 +164,9 @@ export class PostMessageSentHandler {
                     languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
                 }, DialogflowRequestType.EVENT));
             } catch (error) {
-                this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getErrorMessage(error)}`);
-                console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getErrorMessage(error)}`);
+                const errorContent = `${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${rid} } ${getErrorMessage(error)}`;
+                this.app.getLogger().error(errorContent);
+                console.error(errorContent);
             }
         }
     }

@@ -58,7 +58,7 @@ class DialogflowClass {
             } catch (error) {
                 const errorContent = `${Logs.HTTP_REQUEST_ERROR}: { roomID: ${sessionId} } ${getError(error)}`;
                 console.error(errorContent);
-                throw new Error(errorContent);
+                throw new Error(error);
             }
         } else {
 
@@ -83,7 +83,7 @@ class DialogflowClass {
             } catch (error) {
                 const errorContent = `${Logs.HTTP_REQUEST_ERROR}: { roomID: ${sessionId} } ${getError(error)}`;
                 console.error(errorContent);
-                throw new Error(errorContent);
+                throw new Error(error);
             }
         }
     }
@@ -130,7 +130,7 @@ class DialogflowClass {
         } catch (error) {
             const errorContent = `${Logs.HTTP_REQUEST_ERROR}: { roomID: ${sessionId || 'N/A'} } ${getError(error)}`;
             console.error(errorContent);
-            throw new Error(errorContent);
+            throw new Error(error);
         }
     }
 

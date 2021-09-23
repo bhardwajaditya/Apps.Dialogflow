@@ -8,7 +8,8 @@ import { DialogflowRequestType, IDialogflowMessage, IDialogflowQuickReplies, Lan
 import { Logs } from '../enum/Logs';
 import { botTypingListener, removeBotTypingListener } from '../lib//BotTyping';
 import { Dialogflow } from '../lib/Dialogflow';
-import { createDialogflowMessage, createMessage } from '../lib/Message';
+import { getErrorMessage } from '../lib/Helper';
+import { createDialogflowMessage, createMessage, removeQuotedMessage } from '../lib/Message';
 import { handlePayloadActions } from '../lib/payloadAction';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { handleParameters } from '../lib/responseParameters';
@@ -17,7 +18,6 @@ import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
 import { getAppSettingValue } from '../lib/Settings';
 import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
 import { handleTimeout } from '../lib/Timeout';
-import { getErrorMessage } from '../lib/Helper';
 
 export class PostMessageSentHandler {
     constructor(private readonly app: IApp,
@@ -79,6 +79,9 @@ export class PostMessageSentHandler {
             return;
         }
 
+        let messageText = text;
+        messageText = await removeQuotedMessage(this.read, room, messageText);
+
         await handleTimeout(this.app, this.message, this.read, this.http, this.persistence, this.modify);
 
         if (sender.username === DialogflowBotUsername) {
@@ -90,7 +93,7 @@ export class PostMessageSentHandler {
 
         try {
             await botTypingListener(this.modify, rid, DialogflowBotUsername);
-            response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, text, DialogflowRequestType.MESSAGE));
+            response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, messageText, DialogflowRequestType.MESSAGE));
         } catch (error) {
             const errorContent = `${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${rid} } ${getErrorMessage(error)}`;
             this.app.getLogger().error(errorContent);
@@ -104,7 +107,7 @@ export class PostMessageSentHandler {
                 console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
                 return;
             }
-            
+
             updateRoomCustomFields(rid, { isChatBotFunctional: false }, this.read, this.modify);
             await performHandover(this.app, this.modify, this.read, rid, visitorToken, targetDepartment);
 

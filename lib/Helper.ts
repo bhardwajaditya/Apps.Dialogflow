@@ -9,8 +9,8 @@ export const getError = (error: any) => {
 };
 export const getErrorMessage = (error: any) => {
     if (typeof error === 'object') {
-        const errorObject = Object.getOwnPropertyNames(error).reduce((acc, key) => { acc[key] = error[key]; return acc; }, {});
-        return JSON.stringify(errorObject['message'].split(/\n/)[1]);
+        const errorObject: any = Object.getOwnPropertyNames(error).reduce((acc, key) => { acc[key] = error[key]; return acc; }, {});
+        return JSON.stringify(errorObject.message.split(/\n/)[1]);
     }
     return error;
 };
@@ -24,7 +24,6 @@ export const base64EncodeData = (data: string, len: number, b64x: string, b64pad
     let dst = '';
     let i: number;
 
-    // tslint:disable:no-bitwise
     for (i = 0; i <= len - 3; i += 3) {
 
         dst += b64x.charAt(data.charCodeAt(i) >>> 2);
@@ -45,7 +44,6 @@ export const base64EncodeData = (data: string, len: number, b64x: string, b64pad
         dst += b64pad;
         dst += b64pad;
     }
-    // tslint:enable:no-bitwise
 
     return dst;
 };
@@ -56,4 +54,8 @@ export const uuid = (): string => {
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
+};
+
+export const escapeRegExp = (str: string): string => {
+    return str.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&'); // $& means the whole matched string
 };

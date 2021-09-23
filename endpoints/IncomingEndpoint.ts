@@ -76,7 +76,7 @@ export class IncomingEndpoint extends ApiEndpoint {
 
                 try {
                     const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, sessionId, event, DialogflowRequestType.EVENT);
-                    //widechat specific change
+                    // widechat specific change
                     // await createDialogflowMessage(sessionId, read, modify, response, this.app);
                     // await handlePayloadActions(this.app, read, modify, http, persistence, sessionId, vToken, response);
                     await handleResponse(this.app, read, modify, http, persistence, sessionId, vToken, response);

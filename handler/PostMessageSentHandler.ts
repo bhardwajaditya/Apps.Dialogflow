@@ -8,10 +8,9 @@ import { DialogflowRequestType, IDialogflowMessage, IDialogflowQuickReplies, Lan
 import { Logs } from '../enum/Logs';
 import { botTypingListener, removeBotTypingListener } from '../lib//BotTyping';
 import { Dialogflow } from '../lib/Dialogflow';
-import { handleResponse } from '../lib/payloadAction';
-// import { handlePayloadActions } from '../lib/payloadAction';
 import { getErrorMessage } from '../lib/Helper';
 import { createDialogflowMessage, createMessage, removeQuotedMessage } from '../lib/Message';
+import { handleResponse } from '../lib/payloadAction';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';

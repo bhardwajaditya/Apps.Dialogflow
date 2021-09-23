@@ -200,9 +200,9 @@ class DialogflowClass {
             if (session) {
                 // "session" format -> projects/project-id/agent/sessions/session-id
                 const splittedText: Array<string> = session.split('/');
-                const sessionId: string = splittedText[splittedText.length - 1];
-                if (sessionId) {
-                    parsedMessage.sessionId = sessionId;
+                const dfSessionId: string = splittedText[splittedText.length - 1];
+                if (dfSessionId) {
+                    parsedMessage.sessionId = dfSessionId;
                 }
             }
 
@@ -318,9 +318,9 @@ class DialogflowClass {
             if (session) {
                 // "session" format -> projects/project-id/agent/sessions/session-id
                 const splittedText: Array<string> = session.split('/');
-                const sessionId: string = splittedText[splittedText.length - 1];
-                if (sessionId) {
-                    parsedMessage.sessionId = sessionId;
+                const dfSessionId: string = splittedText[splittedText.length - 1];
+                if (dfSessionId) {
+                    parsedMessage.sessionId = dfSessionId;
                 }
             }
 

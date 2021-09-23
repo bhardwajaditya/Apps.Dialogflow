@@ -3,9 +3,9 @@ import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { AppSetting } from '../config/Settings';
 import { Logs } from '../enum/Logs';
+import { createMessage } from '../lib/Message';
 import { performHandover, updateRoomCustomFields } from './Room';
 import { getAppSettingValue } from './Settings';
-import { createMessage } from '../lib/Message';
 
 export const incFallbackIntentAndSendResponse = async (app: IApp, read: IRead, modify: IModify, sessionId: string, dialogflowMessage?: () => any) => {
     const fallbackThreshold = (await getAppSettingValue(read, AppSetting.DialogflowFallbackResponsesLimit)) as number;

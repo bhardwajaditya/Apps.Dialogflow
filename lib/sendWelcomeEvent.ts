@@ -3,11 +3,11 @@ import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { AppSetting } from '../config/Settings';
 import { DialogflowRequestType, IDialogflowCustomFields, IDialogflowMessage, LanguageCode } from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
+import { getError } from '../lib/Helper';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
 import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
 import { getAppSettingValue } from './Settings';
-import { getError } from '../lib/Helper';
 
 export const WELCOME_EVENT_NAME =  'Welcome';
 

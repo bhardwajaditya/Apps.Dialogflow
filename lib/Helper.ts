@@ -9,8 +9,8 @@ export const getError = (error: any) => {
 };
 export const getErrorMessage = (error: any) => {
     if (typeof error === 'object') {
-        const errorObject = Object.getOwnPropertyNames(error).reduce((acc, key) => { acc[key] = error[key]; return acc; }, {});
-        return JSON.stringify(errorObject['message'].split(/\n/)[1]);
+        const errorObject: any = Object.getOwnPropertyNames(error).reduce((acc, key) => { acc[key] = error[key]; return acc; }, {});
+        return JSON.stringify(errorObject.message.split(/\n/)[1]);
     }
     return error;
 };

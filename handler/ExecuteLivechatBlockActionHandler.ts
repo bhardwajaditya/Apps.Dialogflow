@@ -28,7 +28,11 @@ export class ExecuteLivechatBlockActionHandler {
             }
 
             const DialogflowBotUsername: string = await getAppSettingValue(this.read, AppSetting.DialogflowBotUsername);
-            const { servedBy: { username = null } = {}, id: rid } = room as ILivechatRoom;
+            const { servedBy: { username = null } = {}, id: rid, isOpen, closedAt } = room as ILivechatRoom;
+
+            if (!isOpen || closedAt) {
+                return this.context.getInteractionResponder().errorResponse();
+            }
 
             if (!username || DialogflowBotUsername !== username) {
                 return this.context.getInteractionResponder().successResponse();
@@ -40,14 +44,14 @@ export class ExecuteLivechatBlockActionHandler {
                 case ActionIds.PERFORM_HANDOVER:
                     const targetDepartment: string = value || await getAppSettingValue(this.read, AppSetting.FallbackTargetDepartment);
                     if (!targetDepartment) {
-                        await createMessage(this.app, rid, this.read, this.modify, { text: DefaultMessage.DEFAULT_DialogflowRequestFailedMessage });
+                        await createMessage(rid, this.read, this.modify, { text: DefaultMessage.DEFAULT_DialogflowRequestFailedMessage }, this.app);
                         break;
                     }
                     await performHandover(this.app, this.modify, this.read, rid, visitor.token, targetDepartment);
                     break;
 
                 case ActionIds.CLOSE_CHAT:
-                    await closeChat(this.modify, this.read, rid);
+                    await closeChat(this.modify, this.read, rid, this.persistence);
                     break;
 
                 default:
@@ -55,7 +59,7 @@ export class ExecuteLivechatBlockActionHandler {
                     break;
             }
 
-            const { value: hideQuickRepliesSetting } = await this.read.getEnvironmentReader().getSettings().getById(AppSetting.DialogflowHideQuickReplies);
+            const hideQuickRepliesSetting = await getAppSettingValue(this.read, AppSetting.DialogflowHideQuickReplies);
             if (hideQuickRepliesSetting) {
                 await deleteAllActionBlocks(this.modify, appUser, id);
             }

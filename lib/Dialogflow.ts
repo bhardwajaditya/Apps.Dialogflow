@@ -1,12 +1,14 @@
 import { IHttp, IHttpRequest, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
+import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat/ILivechatRoom';
 import { IRoom } from '@rocket.chat/apps-engine/definition/rooms';
 import { createSign } from 'crypto';
 import { AppSetting } from '../config/Settings';
-import { DialogflowJWT, DialogflowRequestType, DialogflowUrl, IDialogflowAccessToken, IDialogflowEvent, IDialogflowMessage, IDialogflowQuickReplies, LanguageCode } from '../enum/Dialogflow';
+import { DialogflowJWT, DialogflowRequestType, DialogflowUrl, IDialogflowAccessToken, IDialogflowCustomFields, IDialogflowEvent, IDialogflowMessage, IDialogflowPayload, IDialogflowQuickReplies, LanguageCode } from '../enum/Dialogflow';
 import { Headers } from '../enum/Http';
 import { Logs } from '../enum/Logs';
-import { base64urlEncode } from './Helper';
+import { base64urlEncode, getError } from './Helper';
 import { createHttpRequest } from './Http';
+import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
 import { updateRoomCustomFields } from './Room';
 import { getAppSettingValue } from './Settings';
 
@@ -17,28 +19,85 @@ class DialogflowClass {
                              modify: IModify,
                              sessionId: string,
                              request: IDialogflowEvent | string,
-                             requestType: DialogflowRequestType): Promise<IDialogflowMessage> {
+                             requestType: DialogflowRequestType): Promise<any> {
+        const dialogFlowVersion = await getAppSettingValue(read, AppSetting.DialogflowVersion);
+
+        const room = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
+        const { id: rid, visitor: { livechatData, token: visitorToken  } } = room;
+
         const serverURL = await this.getServerURL(read, modify, http, sessionId);
 
-        const queryInput = {
-            ...requestType === DialogflowRequestType.EVENT && { event: request },
-            ...requestType === DialogflowRequestType.MESSAGE && { text: { languageCode: LanguageCode.EN, text: request } },
-        };
+        const data = await retrieveDataByAssociation(read, getRoomAssoc(sessionId));
 
-        const httpRequestContent: IHttpRequest = createHttpRequest(
-            { 'Content-Type': Headers.CONTENT_TYPE_JSON, 'Accept': Headers.ACCEPT_JSON },
-            { queryInput },
-        );
+        const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
 
-        try {
-            const response = await http.post(serverURL, httpRequestContent);
-            return this.parseRequest(response.data);
-        } catch (error) {
-            throw new Error(`${ Logs.HTTP_REQUEST_ERROR }`);
+        if (dialogFlowVersion === 'CX') {
+
+            const queryInput = {
+                ...requestType === DialogflowRequestType.EVENT && { event: { event: typeof request === 'string' ? request : request.name} },
+                ...requestType === DialogflowRequestType.MESSAGE && { text: { text: request }},
+                languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
+            };
+
+            const queryParams = {
+                timeZone: 'America/Los_Angeles',
+                parameters:  {
+                    username: room.visitor.username,
+                    roomId: rid,
+                    visitorToken,
+                    ...(livechatData || {}),
+                },
+            };
+
+            if (requestType === DialogflowRequestType.EVENT && typeof request !== 'string') {
+                queryParams.parameters = {...queryParams.parameters, ...(request.parameters ? request.parameters : {})};
+            }
+
+            const accessToken = await this.getAccessToken(read, modify, http, sessionId);
+            if (!accessToken) { throw Error(Logs.ACCESS_TOKEN_ERROR); }
+
+            const httpRequestContent: IHttpRequest = createHttpRequest(
+                { 'Content-Type': Headers.CONTENT_TYPE_JSON, 'Accept': Headers.ACCEPT_JSON, 'Authorization': 'Bearer ' + accessToken },
+                { queryInput, queryParams },
+            );
+
+            try {
+                const response = await http.post(serverURL, httpRequestContent);
+                return await this.parseCXRequest(read, response.data, sessionId);
+            } catch (error) {
+                const errorContent = `${Logs.HTTP_REQUEST_ERROR}: { roomID: ${sessionId} } ${getError(error)}`;
+                console.error(errorContent);
+                throw new Error(error);
+            }
+        } else {
+
+            const queryInput = {
+                ...requestType === DialogflowRequestType.EVENT && { event: request },
+                ...requestType === DialogflowRequestType.MESSAGE && { text:
+                    {
+                        languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
+                        text: request,
+                    },
+                },
+            };
+
+            const httpRequestContent: IHttpRequest = createHttpRequest(
+                { 'Content-Type': Headers.CONTENT_TYPE_JSON, 'Accept': Headers.ACCEPT_JSON},
+                { queryInput },
+            );
+
+            try {
+                const response = await http.post(serverURL, httpRequestContent);
+                return this.parseRequest(response.data, sessionId);
+            } catch (error) {
+                const errorContent = `${Logs.HTTP_REQUEST_ERROR}: { roomID: ${sessionId} } ${getError(error)}`;
+                console.error(errorContent);
+                throw new Error(error);
+            }
         }
     }
 
-    public async generateNewAccessToken(http: IHttp, clientEmail: string, privateKey: string): Promise<IDialogflowAccessToken> {
+    public async generateNewAccessToken(http: IHttp, clientEmail: string, privateKey: string, sessionId?: string): Promise<IDialogflowAccessToken> {
         const authUrl = DialogflowUrl.AUTHENTICATION_SERVER_URL;
         const jwt = this.getJWT(clientEmail, privateKey);
 
@@ -52,7 +111,11 @@ class DialogflowClass {
         try {
             const response = await http.post(authUrl, httpRequestContent);
 
-            if (!response.content) { throw new Error(Logs.INVALID_RESPONSE_FROM_DIALOGFLOW); }
+            if (!response.content) {
+                const errorContent = `${Logs.INVALID_RESPONSE_FROM_DIALOGFLOW}: { roomID: ${sessionId || 'N/A'} }`;
+                console.error(errorContent);
+                throw new Error(errorContent);
+            }
             const responseJSON = JSON.parse(response.content);
 
             const { access_token } = responseJSON;
@@ -74,12 +137,18 @@ class DialogflowClass {
                 throw Error(Logs.ACCESS_TOKEN_ERROR);
             }
         } catch (error) {
-            throw new Error(Logs.HTTP_REQUEST_ERROR);
+            const errorContent = `${Logs.HTTP_REQUEST_ERROR}: { roomID: ${sessionId || 'N/A'} } ${getError(error)}`;
+            console.error(errorContent);
+            throw new Error(error);
         }
     }
 
-    public parseRequest(response: any): IDialogflowMessage {
-        if (!response) { throw new Error(Logs.INVALID_RESPONSE_FROM_DIALOGFLOW_CONTENT_UNDEFINED); }
+    public parseRequest(response: any, sessionId?: string): IDialogflowMessage {
+        if (!response) {
+            const errorContent = `${Logs.INVALID_RESPONSE_FROM_DIALOGFLOW_CONTENT_UNDEFINED}: { roomID: ${sessionId || 'N/A'} }`;
+            console.error(errorContent);
+            throw new Error(errorContent);
+        }
 
         const { session, queryResult } = response;
         if (queryResult) {
@@ -88,21 +157,42 @@ class DialogflowClass {
                 isFallback: isFallback ? isFallback : false,
             };
 
-            const messages: Array<string | IDialogflowQuickReplies> = [];
+            const messages: Array<string | IDialogflowQuickReplies | IDialogflowPayload> = [];
+            // customFields should be sent as the response of last message on client side
+            const msgCustomFields: IDialogflowCustomFields = {};
 
             fulfillmentMessages.forEach((message) => {
-                const { text, payload: { quickReplies = null } = {} } = message;
+                const { text, payload: { quickReplies = null, customFields = null, action = null } = {} } = message;
                 if (text) {
                     const { text: textMessageArray } = text;
-                    messages.push(textMessageArray[0]);
+                    messages.push({ text: textMessageArray[0] });
                 }
                 if (quickReplies) {
-                    const { text: optionsText, options } = quickReplies;
-                    if (optionsText && options) {
+                    const { options, imagecards } = quickReplies;
+                    if (options || imagecards) {
                         messages.push(quickReplies);
                     }
                 }
+                if (customFields) {
+                    msgCustomFields.disableInput = !!customFields.disableInput;
+                    msgCustomFields.disableInputMessage = customFields.disableInputMessage;
+                    msgCustomFields.displayTyping = customFields.displayTyping;
+                }
+                if (action) {
+                    messages.push({action});
+                }
             });
+
+            if (Object.keys(msgCustomFields).length > 0) {
+                if (messages.length > 0) {
+                    let lastObj = messages[messages.length - 1];
+                    lastObj = Object.assign(lastObj, { customFields: msgCustomFields });
+                    messages[messages.length - 1] = lastObj;
+                } else {
+                    messages.push({ customFields: msgCustomFields });
+                }
+            }
+
             if (messages.length > 0) {
                 parsedMessage.messages = messages;
             }
@@ -127,19 +217,155 @@ class DialogflowClass {
         }
     }
 
+    public async parseCXRequest(read: IRead, response: any, sessionId: string): Promise<IDialogflowMessage> {
+        if (!response) {
+            const errorContent = `${Logs.INVALID_RESPONSE_FROM_DIALOGFLOW_CONTENT_UNDEFINED}: { roomID: ${sessionId} }`;
+            console.error(errorContent);
+            throw new Error(errorContent);
+        }
+
+        const { session, queryResult } = response;
+
+        if (queryResult) {
+            const { responseMessages, match: { matchType }, diagnosticInfo } = queryResult;
+
+            // Check array of event names from app settings for fallbacks
+            const parsedMessage: IDialogflowMessage = {
+                isFallback: false,
+            };
+
+            const messages: Array<string | IDialogflowQuickReplies | IDialogflowPayload> = [];
+            // customFields should be sent as the response of last message on client side
+            const msgCustomFields: IDialogflowCustomFields = {};
+
+            let intentConcatText = '';
+            let pageConcatText = '';
+
+            if (responseMessages) {
+                responseMessages.forEach((message) => {
+                    const { text, payload: { quickReplies = null, customFields = null, action = null, isFallback = false } = {} } = message;
+                    if (text) {
+                        const { text: textMessageArray } = text;
+
+                        const sourceType = this.getSourceType(text, diagnosticInfo);
+
+                        if (sourceType === 'intent') {
+                            if (intentConcatText !== '') {
+                                intentConcatText += `\n \n`;
+                            }
+                            intentConcatText += textMessageArray[0];
+                        } else {
+                            if (pageConcatText !== '') {
+                                pageConcatText += `\n \n`;
+                            }
+                            pageConcatText += textMessageArray[0];
+                        }
+                    }
+                    if (quickReplies) {
+                        const { options, imagecards } = quickReplies;
+                        if (options || imagecards) {
+                            messages.push(quickReplies);
+                        }
+                    }
+                    if (customFields) {
+                        msgCustomFields.disableInput = !!customFields.disableInput;
+                        msgCustomFields.disableInputMessage = customFields.disableInputMessage;
+                        msgCustomFields.displayTyping = customFields.displayTyping;
+                    }
+
+                    if (customFields && customFields.mediaCardURL) {
+                        const { mediaCardURL } = customFields;
+                        messages.push({ customFields: { mediaCardURL } });
+                    }
+                    if (action) {
+                        messages.push({action});
+                    }
+                    if (isFallback) {
+                        parsedMessage.isFallback = isFallback;
+                    }
+                });
+
+                if (intentConcatText !== '') {
+                    messages.push({ text: intentConcatText });
+                }
+                if (pageConcatText !== '') {
+                    messages.push({ text: pageConcatText });
+                }
+            }
+
+            if (Object.keys(msgCustomFields).length > 0) {
+
+                for (let i = messages.length - 1; i >= 0; i--) {
+                    if (messages[i].hasOwnProperty('text')) {
+                        let lastObj = messages[i];
+                        lastObj = Object.assign(lastObj, { customFields: msgCustomFields });
+                        messages[i] = lastObj;
+                        break;
+                    }
+                    if (i === 0) {
+                        messages.push({ customFields: msgCustomFields });
+                    }
+                }
+                if (messages.length === 0) {
+                    messages.push({ customFields: msgCustomFields });
+                }
+            }
+
+            if (messages.length > 0) {
+                parsedMessage.messages = messages;
+            }
+
+            if (session) {
+                // "session" format -> projects/project-id/agent/sessions/session-id
+                const splittedText: Array<string> = session.split('/');
+                const sessionId: string = splittedText[splittedText.length - 1];
+                if (sessionId) {
+                    parsedMessage.sessionId = sessionId;
+                }
+            }
+
+            parsedMessage.parameters = queryResult.parameters;
+
+            return parsedMessage;
+        } else {
+            // some error occurred. Dialogflow's response has a error field containing more info abt error
+            throw Error(`An Error occurred while connecting to Dialogflow's REST API\
+            Error Details:-
+                message:- ${response.error.message}\
+                status:- ${response.error.message}\
+            Try checking the google credentials in App Setting and your internet connection`);
+        }
+    }
+
     private async getServerURL(read: IRead, modify: IModify, http: IHttp, sessionId: string) {
-        const projectId = await getAppSettingValue(read, AppSetting.DialogflowProjectId);
+        const botId = await getAppSettingValue(read, AppSetting.DialogflowBotId);
+        const projectIds = (await getAppSettingValue(read, AppSetting.DialogflowProjectId)).split(',');
+        const projectId = projectIds.length >= botId ? projectIds[botId - 1] : projectIds[0];
+        const environments = (await getAppSettingValue(read, AppSetting.DialogflowEnvironment)).split(',');
+        const environment = environments.length >= botId ? environments[botId - 1] : environments[0];
+        const dialogFlowVersion = await getAppSettingValue(read, AppSetting.DialogflowVersion);
+
+        if (dialogFlowVersion === 'CX') {
+
+            const regionId = await getAppSettingValue(read, AppSetting.DialogflowRegion);
+            const agentId = await getAppSettingValue(read, AppSetting.DialogflowAgentId);
+
+            return `https://${regionId}-dialogflow.googleapis.com/v3/projects/${projectId}/locations/${regionId}/agents/${agentId}/sessions/${sessionId}:detectIntent`;
+        }
 
         const accessToken = await this.getAccessToken(read, modify, http, sessionId);
         if (!accessToken) { throw Error(Logs.ACCESS_TOKEN_ERROR); }
-
-        return `https://dialogflow.googleapis.com/v2/projects/${projectId}/agent/environments/draft/users/-/sessions/${sessionId}:detectIntent?access_token=${accessToken}`;
+        return `https://dialogflow.googleapis.com/v2/projects/${projectId}/agent/environments/${environment || 'draft'}/users/-/sessions/${sessionId}:detectIntent?access_token=${accessToken}`;
     }
 
     private async getAccessToken(read: IRead, modify: IModify, http: IHttp, sessionId: string) {
 
-        const clientEmail = await getAppSettingValue(read, AppSetting.DialogflowClientEmail);
-        const privateKey = await getAppSettingValue(read, AppSetting.DialogFlowPrivateKey);
+        const botId = await getAppSettingValue(read, AppSetting.DialogflowBotId);
+        const clientEmails = (await getAppSettingValue(read, AppSetting.DialogflowClientEmail)).split(',');
+        const privateKeys = (await getAppSettingValue(read, AppSetting.DialogFlowPrivateKey)).split(',');
+        const privateKey = privateKeys.length >= botId ? privateKeys[botId - 1] : privateKeys[0];
+        const clientEmail = clientEmails.length >= botId ? clientEmails[botId - 1] : clientEmails[0];
+
         if (!privateKey || !clientEmail) { throw new Error(Logs.EMPTY_CLIENT_EMAIL_OR_PRIVATE_KEY_SETTING); }
 
         const room: IRoom = await read.getRoomReader().getById(sessionId) as IRoom;
@@ -159,13 +385,14 @@ class DialogflowClass {
 
         try {
             // get a new access token
-            const accessToken: IDialogflowAccessToken =  await this.generateNewAccessToken(http, clientEmail, privateKey);
+            const accessToken: IDialogflowAccessToken =  await this.generateNewAccessToken(http, clientEmail, privateKey, sessionId);
 
             // save this access Token for future use
             await updateRoomCustomFields(sessionId, { accessToken }, read, modify);
 
             return accessToken.token;
         } catch (error) {
+            console.error(Logs.ACCESS_TOKEN_ERROR, error);
             throw Error(Logs.ACCESS_TOKEN_ERROR + error);
         }
     }
@@ -223,6 +450,25 @@ class DialogflowClass {
         privateKey = privateKey.trim().replace(/\\n/gm, '\n');
         // sign the signature then in the result replace + with -    |    / with _
         return sign.sign(privateKey, DialogflowJWT.BASE_64).replace(/\+/g, '-').replace(/\//g, '_');
+    }
+
+    private getSourceType(text: any, info: any) {
+        const executionStep = info['Execution Sequence'][2] ? info['Execution Sequence'][2]['Step 3'] : info['Execution Sequence'][1]['Step 2'];
+
+        if (executionStep) {
+
+            const intentResponses = executionStep.FunctionExecution ? executionStep.FunctionExecution.Responses : null;
+
+            if (intentResponses) {
+                for (const response of intentResponses) {
+                    if (response.text && response.text.text[0] === text.text[0] && response.responseType === 'HANDLER_PROMPT') {
+                        return 'intent';
+                    }
+                }
+            }
+        }
+
+        return 'page';
     }
 }
 

@@ -5,8 +5,9 @@ import { AppSetting } from '../config/Settings';
 import { Logs } from '../enum/Logs';
 import { performHandover, updateRoomCustomFields } from './Room';
 import { getAppSettingValue } from './Settings';
+import { createMessage } from '../lib/Message';
 
-export const incFallbackIntent = async (app: IApp, read: IRead, modify: IModify, sessionId: string) => {
+export const incFallbackIntentAndSendResponse = async (app: IApp, read: IRead, modify: IModify, sessionId: string, dialogflowMessage?: () => any) => {
     const fallbackThreshold = (await getAppSettingValue(read, AppSetting.DialogflowFallbackResponsesLimit)) as number;
 
     if (!fallbackThreshold || (fallbackThreshold && fallbackThreshold === 0)) { return; }
@@ -20,14 +21,22 @@ export const incFallbackIntent = async (app: IApp, read: IRead, modify: IModify,
     await updateRoomCustomFields(sessionId, { fallbackCount: newFallbackCount }, read, modify);
 
     if (newFallbackCount === fallbackThreshold) {
+        const targetDepartmentName: string | undefined = await getAppSettingValue(read, AppSetting.FallbackTargetDepartment);
+
+        if (!targetDepartmentName) {
+            console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
+            const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
+            return await createMessage(sessionId, read, modify, { text: serviceUnavailable }, app);
+        }
+
         // perform handover
         const { visitor: { token: visitorToken } } = room;
         if (!visitorToken) { throw new Error(Logs.INVALID_VISITOR_TOKEN); }
 
-        const targetDepartmentName: string | undefined = await getAppSettingValue(read, AppSetting.FallbackTargetDepartment);
-
         // Session Id from Dialogflow will be the same as Room id
-        await performHandover(app, modify, read, sessionId, visitorToken, targetDepartmentName);
+        await performHandover(app, modify, read, sessionId, visitorToken, targetDepartmentName, dialogflowMessage);
+    } else if (dialogflowMessage) {
+        await dialogflowMessage();
     }
 };
 

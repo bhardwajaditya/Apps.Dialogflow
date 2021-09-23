@@ -49,7 +49,58 @@ export const closeChat = async (modify: IModify, read: IRead, rid: string, persi
     if (!result) { throw new Error(Logs.CLOSE_CHAT_REQUEST_FAILED_ERROR); }
 };
 
-export const performHandover = async (app: IApp, modify: IModify, read: IRead, rid: string, visitorToken: string, targetDepartmentName?: string, dialogflowMessage?: () => any) => {
+export const performHandover = async (app: IApp, modify: IModify, read: IRead, rid: string, visitorToken: string, targetDepartmentName?: string, dialogflowMessage?: () => any): Promise<boolean> => {
+
+    const room: ILivechatRoom = (await read.getRoomReader().getById(rid)) as ILivechatRoom;
+    if (!room) { throw new Error(Logs.INVALID_ROOM_ID); }
+
+    const visitor: IVisitor = (await read.getLivechatReader().getLivechatVisitorByToken(visitorToken)) as IVisitor;
+    if (!visitor) { throw new Error(Logs.INVALID_VISITOR_TOKEN); }
+
+    const livechatTransferData: ILivechatTransferData = {
+        currentRoom: room,
+    };
+
+    const removeBotTypingIndicator = async () => {
+        const DialogflowBotUsername: string = await getAppSettingValue(read, AppSetting.DialogflowBotUsername);
+        await removeBotTypingListener(modify, rid, DialogflowBotUsername);
+    };
+
+    const handleHandoverFailure = async (error?: string) => {
+        const offlineMessage: string = await getAppSettingValue(read, AppSetting.DialogflowHandoverFailedMessage);
+        const handoverFailure = {
+            error: error || offlineMessage,
+            errorMessage: 'Unable to reach Liveagent bot, it may be offline or disabled.',
+            dialogflow_SessionID: rid,
+            visitorDetails: (({ id, token }) => ({ id, token }))(visitor),
+            targetDepartment: livechatTransferData.targetDepartment,
+        };
+
+        console.error('Failed to handover', JSON.stringify(handoverFailure));
+
+        if (offlineMessage && offlineMessage.trim()) {
+            await createMessage(rid, read, modify, { text: offlineMessage }, app);
+        }
+        await removeBotTypingIndicator();
+        await closeChat(modify, read, rid);
+    };
+
+    // Fill livechatTransferData.targetDepartment param if required
+    if (targetDepartmentName) {
+        const targetDepartment: IDepartment = (await read.getLivechatReader().getLivechatDepartmentByIdOrName(targetDepartmentName)) as IDepartment;
+        if (!targetDepartment) {
+            await handleHandoverFailure(Logs.INVALID_DEPARTMENT_NAME);
+            return false;
+        }
+        livechatTransferData.targetDepartment = targetDepartment.id;
+    }
+
+    // check if any agent is online in the department where we're transferring this chat
+    const serviceOnline = await read.getLivechatReader().isOnlineAsync(livechatTransferData.targetDepartment);
+    if (!serviceOnline) {
+        await handleHandoverFailure();
+        return false;
+    }
 
     const handoverMessage: string = await getAppSettingValue(read, AppSetting.DialogflowHandoverMessage);
 
@@ -62,50 +113,18 @@ export const performHandover = async (app: IApp, modify: IModify, read: IRead, r
         await createMessage(rid, read, modify, { text: DefaultMessage.DEFAULT_DialogflowHandoverMessage }, app);
     }
 
-    const room: ILivechatRoom = (await read.getRoomReader().getById(rid)) as ILivechatRoom;
-    if (!room) { throw new Error(Logs.INVALID_ROOM_ID); }
-
-    const visitor: IVisitor = (await read.getLivechatReader().getLivechatVisitorByToken(visitorToken)) as IVisitor;
-    if (!visitor) { throw new Error(Logs.INVALID_VISITOR_TOKEN); }
-
-    const livechatTransferData: ILivechatTransferData = {
-        currentRoom: room,
-    };
-
-    // Fill livechatTransferData.targetDepartment param if required
-    if (targetDepartmentName) {
-        const targetDepartment: IDepartment = (await read.getLivechatReader().getLivechatDepartmentByIdOrName(targetDepartmentName)) as IDepartment;
-        if (!targetDepartment) { throw new Error(Logs.INVALID_DEPARTMENT_NAME); }
-        livechatTransferData.targetDepartment = targetDepartment.id;
-    }
-
-    await updateRoomCustomFields(rid, {isHandedOverFromDialogFlow: true}, read, modify);
-
     const result = await modify.getUpdater().getLivechatUpdater().transferVisitor(visitor, livechatTransferData)
         .catch((error) => {
             throw new Error(`${Logs.HANDOVER_REQUEST_FAILED_ERROR} ${error}`);
         });
 
-    const DialogflowBotUsername: string = await getAppSettingValue(read, AppSetting.DialogflowBotUsername);
-    await removeBotTypingListener(modify, rid, DialogflowBotUsername);
-
     if (!result) {
-        const offlineMessage: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
-        const handoverFailure = {
-            error: offlineMessage,
-            errorMessage: 'Unable to reach Liveagent bot, it may be offline or disabled.',
-            dialogflow_SessionID: rid,
-            visitorDetails: (({ id, token }) => ({ id, token }))(visitor),
-            targetDepartment: livechatTransferData.targetDepartment,
-        };
-
-        console.error('Failed to handover', JSON.stringify(handoverFailure));
-
-        await createMessage(rid, read, modify, { text: offlineMessage }, app);
-
-        await closeChat(modify, read, rid);
-        return;
+        await handleHandoverFailure();
+        return false;
     }
+
+    await removeBotTypingIndicator();
+    await updateRoomCustomFields(rid, {isHandedOverFromDialogFlow: true}, read, modify);
 
     // Viasat : Start maintaining session after handover
     const sessionMaintenanceInterval: string = await getAppSettingValue(read, AppSetting.DialogflowSessionMaintenanceInterval);
@@ -118,4 +137,5 @@ export const performHandover = async (app: IApp, modify: IModify, read: IRead, r
             jobName: JobName.SESSION_MAINTENANCE,
         }));
     }
+    return true;
 };

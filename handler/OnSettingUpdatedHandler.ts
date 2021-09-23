@@ -13,8 +13,8 @@ export class OnSettingUpdatedHandler {
         const botId = await getAppSettingValue(this.read, AppSetting.DialogflowBotId);
         const clientEmails = (await getAppSettingValue(this.read, AppSetting.DialogflowClientEmail)).split(',');
         const privateKeys = (await getAppSettingValue(this.read, AppSetting.DialogFlowPrivateKey)).split(',');
-        const privateKey = privateKeys.length >= botId ? privateKeys[botId - 1]: privateKeys[0];
-        const clientEmail = clientEmails.length >= botId ? clientEmails[botId - 1]: clientEmails[0];
+        const privateKey = privateKeys.length >= botId ? privateKeys[botId - 1] : privateKeys[0];
+        const clientEmail = clientEmails.length >= botId ? clientEmails[botId - 1] : clientEmails[0];
 
         if (clientEmail.length === 0 || privateKey.length === 0) {
             this.app.getLogger().error(Logs.EMPTY_CLIENT_EMAIL_OR_PRIVATE_KEY_SETTING);

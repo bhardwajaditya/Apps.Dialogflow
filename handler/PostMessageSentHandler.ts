@@ -8,9 +8,10 @@ import { DialogflowRequestType, IDialogflowMessage, IDialogflowQuickReplies, Lan
 import { Logs } from '../enum/Logs';
 import { botTypingListener, removeBotTypingListener } from '../lib//BotTyping';
 import { Dialogflow } from '../lib/Dialogflow';
-import { createDialogflowMessage, createMessage } from '../lib/Message';
 import { handleResponse } from '../lib/payloadAction';
 // import { handlePayloadActions } from '../lib/payloadAction';
+import { getErrorMessage } from '../lib/Helper';
+import { createDialogflowMessage, createMessage, removeQuotedMessage } from '../lib/Message';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
@@ -18,7 +19,6 @@ import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
 import { getAppSettingValue } from '../lib/Settings';
 import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
 import { handleTimeout } from '../lib/Timeout';
-import { getErrorMessage } from '../lib/Helper';
 
 export class PostMessageSentHandler {
     constructor(private readonly app: IApp,
@@ -80,6 +80,9 @@ export class PostMessageSentHandler {
             return;
         }
 
+        let messageText = text;
+        messageText = await removeQuotedMessage(this.read, room, messageText);
+
         await handleTimeout(this.app, this.message, this.read, this.http, this.persistence, this.modify);
 
         if (sender.username === DialogflowBotUsername) {
@@ -91,10 +94,11 @@ export class PostMessageSentHandler {
 
         try {
             await botTypingListener(this.modify, rid, DialogflowBotUsername);
-            response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, text, DialogflowRequestType.MESSAGE));
+            response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, messageText, DialogflowRequestType.MESSAGE));
         } catch (error) {
-            this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getErrorMessage(error)}`);
-            console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getErrorMessage(error)}`);
+            const errorContent = `${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${rid} } ${getErrorMessage(error)}`;
+            this.app.getLogger().error(errorContent);
+            console.error(errorContent);
 
             const serviceUnavailable: string = await getAppSettingValue(this.read, AppSetting.DialogflowServiceUnavailableMessage);
             await createMessage(rid, this.read, this.modify, { text: serviceUnavailable }, this.app);
@@ -104,7 +108,7 @@ export class PostMessageSentHandler {
                 console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
                 return;
             }
-            
+
             updateRoomCustomFields(rid, { isChatBotFunctional: false }, this.read, this.modify);
             await performHandover(this.app, this.modify, this.read, rid, visitorToken, targetDepartment);
 
@@ -165,8 +169,9 @@ export class PostMessageSentHandler {
                     languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
                 }, DialogflowRequestType.EVENT));
             } catch (error) {
-                this.app.getLogger().error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getErrorMessage(error)}`);
-                console.error(`${Logs.DIALOGFLOW_REST_API_ERROR} ${getErrorMessage(error)}`);
+                const errorContent = `${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${rid} } ${getErrorMessage(error)}`;
+                this.app.getLogger().error(errorContent);
+                console.error(errorContent);
             }
         }
     }

@@ -14,6 +14,7 @@ export enum AppSetting {
     FallbackTargetDepartment = 'fallback_target_department',
     DialogflowHandoverMessage = 'dialogflow_handover_message',
     DialogflowServiceUnavailableMessage = 'dialogflow_service_unavailable_message',
+    DialogflowHandoverFailedMessage = 'dialogflow_no_agents_online_for_handover',
     DialogflowCloseChatMessage = 'dialogflow_close_chat_message',
     DialogflowHideQuickReplies = 'dialogflow_hide_quick_replies',
     DialogflowEnableChatClosedByVisitorEvent = 'dialogflow_enable_chat_closed_by_visitor_event',
@@ -31,6 +32,10 @@ export enum AppSetting {
     DialogflowAgentId = 'dialogflow_cx_agent_id',
     DialogflowRegion = 'dialogflow_cx_region',
     DialogflowCXFallbackEvents = 'dialogflow_cx_fallback_events',
+}
+
+export enum ServerSetting {
+    SITE_URL = 'Site_Url',
 }
 
 export enum DefaultMessage {
@@ -164,6 +169,15 @@ export const settings: Array<ISetting> = [
         packageValue: DefaultMessage.DEFAULT_DialogflowHandoverMessage,
         i18nLabel: 'dialogflow_handover_message',
         i18nDescription: 'dialogflow_handover_message_description',
+        required: false,
+    },
+    {
+        id: AppSetting.DialogflowHandoverFailedMessage,
+        public: true,
+        type: SettingType.STRING,
+        packageValue: '',
+        i18nLabel: 'dialogflow_handover_failed_message',
+        i18nDescription: 'dialogflow_handover_failed_message_description',
         required: false,
     },
     {

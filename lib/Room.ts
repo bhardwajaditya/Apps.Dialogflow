@@ -61,17 +61,15 @@ export const performHandover = async (app: IApp, modify: IModify, read: IRead, r
         currentRoom: room,
     };
 
-    // Fill livechatTransferData.targetDepartment param if required
-    if (targetDepartmentName) {
-        const targetDepartment: IDepartment = (await read.getLivechatReader().getLivechatDepartmentByIdOrName(targetDepartmentName)) as IDepartment;
-        if (!targetDepartment) { throw new Error(Logs.INVALID_DEPARTMENT_NAME); }
-        livechatTransferData.targetDepartment = targetDepartment.id;
-    }
+    const removeBotTypingIndicator = async () => {
+        const DialogflowBotUsername: string = await getAppSettingValue(read, AppSetting.DialogflowBotUsername);
+        await removeBotTypingListener(modify, rid, DialogflowBotUsername);
+    };
 
-    const sendHandoverFailureMessage = async () => {
+    const handleHandoverFailure = async (error?: string) => {
         const offlineMessage: string = await getAppSettingValue(read, AppSetting.DialogflowHandoverFailedMessage);
         const handoverFailure = {
-            error: offlineMessage,
+            error: error || offlineMessage,
             errorMessage: 'Unable to reach Liveagent bot, it may be offline or disabled.',
             dialogflow_SessionID: rid,
             visitorDetails: (({ id, token }) => ({ id, token }))(visitor),
@@ -83,12 +81,24 @@ export const performHandover = async (app: IApp, modify: IModify, read: IRead, r
         if (offlineMessage && offlineMessage.trim()) {
             await createMessage(rid, read, modify, { text: offlineMessage }, app);
         }
+        await removeBotTypingIndicator();
+        await closeChat(modify, read, rid);
     };
+
+    // Fill livechatTransferData.targetDepartment param if required
+    if (targetDepartmentName) {
+        const targetDepartment: IDepartment = (await read.getLivechatReader().getLivechatDepartmentByIdOrName(targetDepartmentName)) as IDepartment;
+        if (!targetDepartment) {
+            await handleHandoverFailure(Logs.INVALID_DEPARTMENT_NAME);
+            return false;
+        }
+        livechatTransferData.targetDepartment = targetDepartment.id;
+    }
 
     // check if any agent is online in the department where we're transferring this chat
     const serviceOnline = await read.getLivechatReader().isOnlineAsync(livechatTransferData.targetDepartment);
     if (!serviceOnline) {
-        sendHandoverFailureMessage();
+        await handleHandoverFailure();
         return false;
     }
 
@@ -108,15 +118,12 @@ export const performHandover = async (app: IApp, modify: IModify, read: IRead, r
             throw new Error(`${Logs.HANDOVER_REQUEST_FAILED_ERROR} ${error}`);
         });
 
-    const DialogflowBotUsername: string = await getAppSettingValue(read, AppSetting.DialogflowBotUsername);
-    await removeBotTypingListener(modify, rid, DialogflowBotUsername);
-
     if (!result) {
-        sendHandoverFailureMessage();
-        await closeChat(modify, read, rid);
+        await handleHandoverFailure();
         return false;
     }
 
+    await removeBotTypingIndicator();
     await updateRoomCustomFields(rid, {isHandedOverFromDialogFlow: true}, read, modify);
 
     // Viasat : Start maintaining session after handover

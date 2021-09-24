@@ -177,21 +177,12 @@ class DialogflowClass {
                     msgCustomFields.disableInput = !!customFields.disableInput;
                     msgCustomFields.disableInputMessage = customFields.disableInputMessage;
                     msgCustomFields.displayTyping = customFields.displayTyping;
+                    messages.push({ customFields: msgCustomFields });
                 }
                 if (action) {
                     messages.push({action});
                 }
             });
-
-            if (Object.keys(msgCustomFields).length > 0) {
-                if (messages.length > 0) {
-                    let lastObj = messages[messages.length - 1];
-                    lastObj = Object.assign(lastObj, { customFields: msgCustomFields });
-                    messages[messages.length - 1] = lastObj;
-                } else {
-                    messages.push({ customFields: msgCustomFields });
-                }
-            }
 
             if (messages.length > 0) {
                 parsedMessage.messages = messages;

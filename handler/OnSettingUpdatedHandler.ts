@@ -10,23 +10,25 @@ export class OnSettingUpdatedHandler {
     constructor(private readonly app: IApp, private readonly read: IRead, private readonly http: IHttp) {}
 
     public async run() {
-        const botId = await getAppSettingValue(this.read, AppSetting.DialogflowBotId);
-        const clientEmails = (await getAppSettingValue(this.read, AppSetting.DialogflowClientEmail)).split(',');
-        const privateKeys = (await getAppSettingValue(this.read, AppSetting.DialogFlowPrivateKey)).split(',');
-        const privateKey = privateKeys.length >= botId ? privateKeys[botId - 1] : privateKeys[0];
-        const clientEmail = clientEmails.length >= botId ? clientEmails[botId - 1] : clientEmails[0];
+        const dialogflowBotList = JSON.parse(await getAppSettingValue(this.read, AppSetting.DialogflowBotList));
 
-        if (clientEmail.length === 0 || privateKey.length === 0) {
-            this.app.getLogger().error(Logs.EMPTY_CLIENT_EMAIL_OR_PRIVATE_KEY_SETTING);
-            return;
-        }
+        for (const bot of Object.keys(dialogflowBotList)) {
 
-        try {
-            await Dialogflow.generateNewAccessToken(this.http, clientEmail, privateKey);
-            this.app.getLogger().info(Logs.GOOGLE_AUTH_SUCCESS);
-        } catch (error) {
-            console.error(Logs.HTTP_REQUEST_ERROR, getError(error));
-            this.app.getLogger().error(error.message);
+            const privateKey = dialogflowBotList[bot].private_key;
+            const clientEmail = dialogflowBotList[bot].client_email;
+            if (clientEmail.length === 0 || privateKey.length === 0) {
+                this.app.getLogger().error(Logs.EMPTY_CLIENT_EMAIL_OR_PRIVATE_KEY_SETTING);
+                return;
+            }
+
+            this.app.getLogger().info(`--- Agent: ${ bot } ---`);
+            try {
+                await Dialogflow.generateNewAccessToken(this.http, clientEmail, privateKey);
+                this.app.getLogger().info(Logs.GOOGLE_AUTH_SUCCESS);
+            } catch (error) {
+                console.error(Logs.HTTP_REQUEST_ERROR, getError(error));
+                this.app.getLogger().error(error.message);
+            }
         }
     }
 }

@@ -14,7 +14,7 @@ export const WELCOME_EVENT_NAME =  'Welcome';
 export const sendWelcomeEventToDialogFlow = async (app: IApp, read: IRead,  modify: IModify, persistence: IPersistence, http: IHttp, rid: string, visitorToken: string, livechatData: any) => {
     try {
         const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
-        const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
+        const defaultLanguageCode = await Dialogflow.getLivechatAgentCredentials(read, rid, 'agent_default_language');
         const event = {
             name: WELCOME_EVENT_NAME,
             languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,

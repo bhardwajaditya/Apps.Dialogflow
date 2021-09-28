@@ -347,10 +347,8 @@ class DialogflowClass {
     }
 
     private async getServerURL(read: IRead, modify: IModify, http: IHttp, sessionId: string) {
-        const botId = await getAppSettingValue(read, AppSetting.DialogflowBotId);
         const projectId = await this.getLivechatAgentCredentials(read, sessionId, 'project_id');
-        const environments = (await getAppSettingValue(read, AppSetting.DialogflowEnvironment)).split(',');
-        const environment = environments.length >= botId ? environments[botId - 1] : environments[0];
+        const environment = await this.getLivechatAgentCredentials(read, sessionId, 'environment');
         const dialogFlowVersion = await getAppSettingValue(read, AppSetting.DialogflowVersion);
 
         if (dialogFlowVersion === 'CX') {

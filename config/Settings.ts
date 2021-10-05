@@ -44,18 +44,6 @@ export enum DefaultMessage {
 
 export const settings: Array<ISetting> = [
     {
-        id: AppSetting.DialogflowVersion,
-        public: true,
-        type: SettingType.SELECT,
-        packageValue: 'ES',
-        i18nLabel: 'agent_version',
-        values: [
-            { key: 'ES', i18nLabel: 'ES' },
-            { key: 'CX', i18nLabel: 'CX' },
-        ],
-        required: true,
-    },
-    {
         id: AppSetting.DialogflowBotUsername,
         public: true,
         type: SettingType.STRING,
@@ -67,7 +55,7 @@ export const settings: Array<ISetting> = [
         id: AppSetting.DialogflowBotList,
         public: true,
         type: SettingType.CODE,
-        packageValue: `{\n    "omnichannel_bot1_name": {\n"project_id": "",\n        "client_email": "",\n        "agent_id": "",\n        "agent_region": "",\n        "agent_default_language": "",\n        "private_key": ""    }\n,    "omnichannel_bot2_name": {...}\n}`,
+        packageValue: `{\n    "omnichannel_bot1_name": {\n        "project_id": "",\n        "client_email": "",\n        "agent_id": "",\n        "agent_region": "",\n        "agent_default_language": "",\n        "private_key": "",\n        "agent_version": ""\n    },\n    "omnichannel_bot2_name": {...}\n}`,
         i18nLabel: 'dialogflow_bot_list_config',
         i18nDescription: 'dialogflow_bot_list_config_description',
         required: true,

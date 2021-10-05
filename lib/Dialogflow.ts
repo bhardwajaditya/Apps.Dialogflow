@@ -20,7 +20,6 @@ class DialogflowClass {
                              sessionId: string,
                              request: IDialogflowEvent | string,
                              requestType: DialogflowRequestType): Promise<any> {
-        const dialogFlowVersion = await getAppSettingValue(read, AppSetting.DialogflowVersion);
 
         const room = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
         const { id: rid, visitor: { livechatData, token: visitorToken  } } = room;
@@ -30,6 +29,7 @@ class DialogflowClass {
         const data = await retrieveDataByAssociation(read, getRoomAssoc(sessionId));
 
         const defaultLanguageCode = await this.getLivechatAgentCredentials(read, rid, 'agent_default_language');
+        const dialogFlowVersion = await this.getLivechatAgentCredentials(read, sessionId, 'version');
 
         if (dialogFlowVersion === 'CX') {
 
@@ -343,17 +343,24 @@ class DialogflowClass {
             const dialogflowBotList = JSON.parse(await getAppSettingValue(read, AppSetting.DialogflowBotList));
             const room = await read.getRoomReader().getById(sessionId) as any;
             const agentName = room.servedBy.username;
+
+            if (!dialogflowBotList[agentName]) {
+                console.error(Logs.NO_AGENT_IN_CONFIG_WITH_CURRENT_AGENT_NAME, agentName);
+                throw Error(`Agent ${ agentName } not found in Dialogflow Agent Endpoints`);
+            }
             return dialogflowBotList[agentName][type];
+
         } catch (e) {
             console.error(Logs.AGENT_CONFIG_FORMAT_ERROR);
             throw new Error(e);
         }
+
     }
 
     private async getServerURL(read: IRead, modify: IModify, http: IHttp, sessionId: string) {
         const projectId = await this.getLivechatAgentCredentials(read, sessionId, 'project_id');
         const environment = await this.getLivechatAgentCredentials(read, sessionId, 'environment');
-        const dialogFlowVersion = await getAppSettingValue(read, AppSetting.DialogflowVersion);
+        const dialogFlowVersion = await this.getLivechatAgentCredentials(read, sessionId, 'version');
 
         if (dialogFlowVersion === 'CX') {
 

@@ -23,4 +23,5 @@ export enum Logs {
     HANDOVER_REQUEST_FAILED_ERROR = 'Error occurred while processing handover. Details',
     NO_AGENTS_ONLINE = 'Handover failed! No agents online',
     AGENT_CONFIG_FORMAT_ERROR = 'Error in the Dialogflow Agent Endpoints JSON format.',
+    NO_AGENT_IN_CONFIG_WITH_CURRENT_AGENT_NAME = 'Error: No agent listed in Dialogflow Agent Endpoints with username: ',
 }

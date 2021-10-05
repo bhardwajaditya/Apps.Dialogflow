@@ -4,6 +4,8 @@
     "dialogflow_bot_id": "Bot Id",
     "dialogflow_bot_id_description": "Select the bot to use from the list of bots. Use comma to seperate values in respective fields",
     "dialogflow_project_id": "Project Id",
+    "dialogflow_bot_list_config": "Dialogflow Agent Endpoints",
+    "dialogflow_bot_list_config_description": "An object containing the Omnichannel bots and the configurations necessary to reach the corresponsind F agent endpont",
     "dialogflow_client_email": "Client Email",
     "dialogflow_cx_agent_id": "[CX ONLY] Dialogflow Agent ID",
     "dialogflow_cx_agent_id_desc": "1. Go to the Dialogflow CX console. \n 2. Select the project. \n 3. From the agent list find the right agent and click `⋮` . \n 4. Select copy name. \n 5. The agent name has the following format: \n 6. `projects/PROJECT_ID/locations/REGION_ID/agents/AGENT_ID`. \n 7. Copy `AGENT_ID` and paste it here.",

@@ -69,6 +69,7 @@ export const settings: Array<ISetting> = [
         type: SettingType.CODE,
         packageValue: `{\n    "omnichannel_bot1_name": {\n"project_id": "",\n        "client_email": "",\n        "agent_id": "",\n        "agent_region": "",\n        "agent_default_language": "",\n        "private_key": ""    }\n,    "omnichannel_bot2_name": {...}\n}`,
         i18nLabel: 'dialogflow_bot_list_config',
+        i18nDescription: 'dialogflow_bot_list_config_description',
         required: true,
     },
     {

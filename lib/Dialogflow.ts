@@ -339,11 +339,15 @@ class DialogflowClass {
 
     public async getLivechatAgentCredentials(read: IRead, sessionId: string, type: string) {
 
-        const dialogflowBotList = JSON.parse(await getAppSettingValue(read, AppSetting.DialogflowBotList));
-        const room = await read.getRoomReader().getById(sessionId) as any;
-        const agentName = room.servedBy.username;
-
-        return dialogflowBotList[agentName][type];
+        try {
+            const dialogflowBotList = JSON.parse(await getAppSettingValue(read, AppSetting.DialogflowBotList));
+            const room = await read.getRoomReader().getById(sessionId) as any;
+            const agentName = room.servedBy.username;
+            return dialogflowBotList[agentName][type];
+        } catch (e) {
+            console.error(Logs.AGENT_CONFIG_FORMAT_ERROR);
+            throw new Error(e);
+        }
     }
 
     private async getServerURL(read: IRead, modify: IModify, http: IHttp, sessionId: string) {

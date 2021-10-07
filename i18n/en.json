@@ -15,6 +15,8 @@
     "dialogflow_private_key": "Private Key",
     "dialogflow_environment": "Environment",
     "dialogflow_environment_description": "Name of the Dialogflow environment. Default environment is draft",
+    "dialogflow_environment_id": "[CX ONLY] Environment ID",
+    "dialogflow_environment_id_description": "CX accepts the environment ID instead of the environment name for all environments other than `draft` \n 1. Go to the Dialogflow CX console. \n 2. Select the project. \n 3. Select agent. \n 4. Go to Environments and select 'Copy environment name to clipboard'. \n 5. The environment ID has the following format: \n 6. `projects/PROJECT_ID/locations/REGION_ID/agents/AGENT_ID/environments/ENVIRONMENT_ID`. \n 7. Copy `ENVIRONMENT_ID` and paste it here. \n 8. Write `draft` for default environment.",
     "dialogflow_fallback_responses_limit": "Fallback Responses Limit",
     "dialogflow_fallback_responses_limit_description": "The app will automatically trigger handover if consecutive fallback intents are triggered N no of times. This setting defines this value N",
     "target_department_for_handover": "Target Department for Handover",

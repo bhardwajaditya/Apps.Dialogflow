@@ -334,12 +334,12 @@ class DialogflowClass {
         const projectId = projectIds.length >= botId ? projectIds[botId - 1] : projectIds[0];
         const environments = (await getAppSettingValue(read, AppSetting.DialogflowEnvironment)).split(',');
         const environment = environments.length >= botId ? environments[botId - 1] : environments[0];
-        const environmentId = await getAppSettingValue(read, AppSetting.DialogflowEnvironmentId);
         const dialogFlowVersion = await getAppSettingValue(read, AppSetting.DialogflowVersion);
 
         if (dialogFlowVersion === 'CX') {
 
             const regionId = await getAppSettingValue(read, AppSetting.DialogflowRegion);
+            const environmentId = await getAppSettingValue(read, AppSetting.DialogflowEnvironmentId);
             const agentId = await getAppSettingValue(read, AppSetting.DialogflowAgentId);
 
             return `https://${regionId}-dialogflow.googleapis.com/v3/projects/${projectId}/locations/${regionId}/agents/${agentId}/environments/${environmentId || 'draft'}/sessions/${sessionId}:detectIntent`;

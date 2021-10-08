@@ -339,9 +339,10 @@ class DialogflowClass {
         if (dialogFlowVersion === 'CX') {
 
             const regionId = await getAppSettingValue(read, AppSetting.DialogflowRegion);
+            const environmentId = await getAppSettingValue(read, AppSetting.DialogflowEnvironmentId);
             const agentId = await getAppSettingValue(read, AppSetting.DialogflowAgentId);
 
-            return `https://${regionId}-dialogflow.googleapis.com/v3/projects/${projectId}/locations/${regionId}/agents/${agentId}/sessions/${sessionId}:detectIntent`;
+            return `https://${regionId}-dialogflow.googleapis.com/v3/projects/${projectId}/locations/${regionId}/agents/${agentId}/environments/${environmentId || 'draft'}/sessions/${sessionId}:detectIntent`;
         }
 
         const accessToken = await this.getAccessToken(read, modify, http, sessionId);

@@ -3,7 +3,7 @@
     "dialogflow_bot_id": "Bot Id",
     "dialogflow_bot_id_description": "Select the bot to use from the list of bots. Use comma to seperate values in respective fields",
     "dialogflow_project_id": "Project Id",
-    "dialogflow_bot_list_config": "Dialogflow Agent Endpoints",
+    "dialogflow_bot_list_config": "Dialogflow Agent Configuration List",
     "dialogflow_bot_list_config_description": "An object containing the Omnichannel bots and the configurations necessary to reach the corresponsind DF agent endpont",
     "dialogflow_client_email": "Client Email",
     "dialogflow_cx_agent_id": "[CX ONLY] Dialogflow Agent ID",

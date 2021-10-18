@@ -159,7 +159,7 @@ export class PostMessageSentHandler {
         const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
         if (DialogflowEnableChatClosedByVisitorEvent) {
             try {
-                const defaultLanguageCode = await Dialogflow.getLivechatAgentCredentials(read, rid, 'agent_default_language');
+                const defaultLanguageCode = LanguageCode[await Dialogflow.getLivechatAgentCredentials(read, rid, 'agent_default_language')];
 
                 let res: IDialogflowMessage;
                 res = (await Dialogflow.sendRequest(this.http, this.read, this.modify,  rid, {

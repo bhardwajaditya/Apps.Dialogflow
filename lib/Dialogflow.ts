@@ -367,7 +367,7 @@ class DialogflowClass {
             const regionId = await this.getLivechatAgentCredentials(read, sessionId, 'agent_region');
             const agentId = await this.getLivechatAgentCredentials(read, sessionId, 'agent_id');
 
-            return `https://${regionId}-dialogflow.googleapis.com/v3/projects/${projectId}/locations/${regionId}/agents/${agentId}/sessions/${sessionId}:detectIntent`;
+            return `https://${regionId}-dialogflow.googleapis.com/v3/projects/${projectId}/locations/${regionId}/agents/${agentId}/environments/${environment || 'draft'}/sessions/${sessionId}:detectIntent`;
         }
 
         const accessToken = await this.getAccessToken(read, modify, http, sessionId);

@@ -43,31 +43,14 @@ export enum DefaultMessage {
 }
 
 export const settings: Array<ISetting> = [
-    {
-        id: AppSetting.DialogflowBotUsername,
-        public: true,
-        type: SettingType.STRING,
-        packageValue: 'virtualassistant',
-        i18nLabel: 'bot_username',
-        required: true,
-    },
+
     {
         id: AppSetting.DialogflowBotList,
         public: true,
         type: SettingType.CODE,
-        packageValue: `{\n    "omnichannel_bot1_name": {\n        "project_id": "",\n        "client_email": "",\n        "agent_id": "",\n        "agent_region": "",\n        "agent_default_language": "",\n        "environment_id": "",\n        "private_key": "",\n        "agent_version": ""\n    },\n    "omnichannel_bot2_name": {...}\n}`,
+        packageValue: `{\n    "omnichannel_agent1_name": {\n        "project_id": "",\n        "client_email": "",\n        "agent_id": "",\n        "agent_region": "",\n        "agent_default_language": "EN",\n        "environment_id": "",\n        "private_key": "",\n        "agent_version": ""\n    },\n    "omnichannel_agent2_name": {...}\n}`,
         i18nLabel: 'dialogflow_bot_list_config',
         i18nDescription: 'dialogflow_bot_list_config_description',
-        required: true,
-    },
-    {
-        id: AppSetting.DialogflowBotId,
-        public: true,
-        type: SettingType.NUMBER,
-        packageValue: 1,
-        value: 1,
-        i18nLabel: 'dialogflow_bot_id',
-        i18nDescription: 'dialogflow_bot_id_description',
         required: true,
     },
     {

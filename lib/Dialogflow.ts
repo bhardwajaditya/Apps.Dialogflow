@@ -359,7 +359,7 @@ class DialogflowClass {
 
     private async getServerURL(read: IRead, modify: IModify, http: IHttp, sessionId: string) {
         const projectId = await this.getLivechatAgentCredentials(read, sessionId, 'project_id');
-        const environment = await this.getLivechatAgentCredentials(read, sessionId, 'environment');
+        const environmentId = await this.getLivechatAgentCredentials(read, sessionId, 'environment_id');
         const dialogFlowVersion = await this.getLivechatAgentCredentials(read, sessionId, 'version');
 
         if (dialogFlowVersion === 'CX') {
@@ -367,12 +367,12 @@ class DialogflowClass {
             const regionId = await this.getLivechatAgentCredentials(read, sessionId, 'agent_region');
             const agentId = await this.getLivechatAgentCredentials(read, sessionId, 'agent_id');
 
-            return `https://${regionId}-dialogflow.googleapis.com/v3/projects/${projectId}/locations/${regionId}/agents/${agentId}/environments/${environment || 'draft'}/sessions/${sessionId}:detectIntent`;
+            return `https://${regionId}-dialogflow.googleapis.com/v3/projects/${projectId}/locations/${regionId}/agents/${agentId}/environments/${environmentId || 'draft'}/sessions/${sessionId}:detectIntent`;
         }
 
         const accessToken = await this.getAccessToken(read, modify, http, sessionId);
         if (!accessToken) { throw Error(Logs.ACCESS_TOKEN_ERROR); }
-        return `https://dialogflow.googleapis.com/v2/projects/${projectId}/agent/environments/${environment || 'draft'}/users/-/sessions/${sessionId}:detectIntent?access_token=${accessToken}`;
+        return `https://dialogflow.googleapis.com/v2/projects/${projectId}/agent/environments/${environmentId || 'draft'}/users/-/sessions/${sessionId}:detectIntent?access_token=${accessToken}`;
     }
 
     private async getAccessToken(read: IRead, modify: IModify, http: IHttp, sessionId: string) {

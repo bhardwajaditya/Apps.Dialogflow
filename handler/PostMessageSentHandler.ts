@@ -33,7 +33,10 @@ export class PostMessageSentHandler {
 
         const { id: rid, type, servedBy, isOpen, customFields: roomCustomFields } = livechatRoom;
 
-        const DialogflowBotUsername: string = await getAppSettingValue(this.read, AppSetting.DialogflowBotUsername);
+        const dialogflowBotList = JSON.parse(await getAppSettingValue(this.read, AppSetting.DialogflowBotList));
+        if (!servedBy || !dialogflowBotList[servedBy.username]) {
+            return;
+        }
 
         if (text === Message.CLOSED_BY_VISITOR) {
             if (roomCustomFields && roomCustomFields.isHandedOverFromDialogFlow === true) {
@@ -63,15 +66,11 @@ export class PostMessageSentHandler {
         if (customFields) {
             const { disableInput, displayTyping } = customFields;
             if (disableInput === true && displayTyping !== true) {
-                await removeBotTypingListener(this.modify, rid, DialogflowBotUsername);
+                await removeBotTypingListener(this.modify, rid, servedBy.username);
             }
         }
 
         if (!text || editedAt) {
-            return;
-        }
-
-        if (!servedBy || servedBy.username !== DialogflowBotUsername) {
             return;
         }
 
@@ -84,7 +83,7 @@ export class PostMessageSentHandler {
 
         await handleTimeout(this.app, this.message, this.read, this.http, this.persistence, this.modify);
 
-        if (sender.username === DialogflowBotUsername) {
+        if (sender.username === servedBy.username) {
             return;
         }
 
@@ -92,7 +91,7 @@ export class PostMessageSentHandler {
         const { visitor: { token: visitorToken } } = room as ILivechatRoom;
 
         try {
-            await botTypingListener(this.modify, rid, DialogflowBotUsername);
+            await botTypingListener(this.modify, rid, servedBy.username);
             response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, messageText, DialogflowRequestType.MESSAGE));
         } catch (error) {
             const errorContent = `${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${rid} } ${getErrorMessage(error)}`;
@@ -119,7 +118,7 @@ export class PostMessageSentHandler {
         // synchronous handover check
         const { isFallback } = response;
         if (isFallback) {
-            await removeBotTypingListener(this.modify, rid, DialogflowBotUsername);
+            await removeBotTypingListener(this.modify, rid, servedBy.username);
             return incFallbackIntentAndSendResponse(this.app, this.read, this.modify, rid, createResponseMessage);
         }
 
@@ -147,14 +146,14 @@ export class PostMessageSentHandler {
         }
 
         if (removeTypingIndicator) {
-            await this.removeBotTypingListener(rid);
+            await this.removeBotTypingListener(this.read, rid);
         }
     }
 
     private async handleClosedByVisitor(rid: string, read: IRead) {
         const DialogflowEnableChatClosedByVisitorEvent: boolean = await getAppSettingValue(this.read, AppSetting.DialogflowEnableChatClosedByVisitorEvent);
         const DialogflowChatClosedByVisitorEventName: string = await getAppSettingValue(this.read, AppSetting.DialogflowChatClosedByVisitorEventName);
-        await this.removeBotTypingListener(rid);
+        await this.removeBotTypingListener(read, rid);
 
         const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
         if (DialogflowEnableChatClosedByVisitorEvent) {
@@ -174,8 +173,9 @@ export class PostMessageSentHandler {
         }
     }
 
-    private async removeBotTypingListener(rid: string) {
-        const DialogflowBotUsername: string = await getAppSettingValue(this.read, AppSetting.DialogflowBotUsername);
+    private async removeBotTypingListener(read: IRead, rid: string) {
+        const room = await read.getRoomReader().getById(rid) as any;
+        const DialogflowBotUsername = room.servedBy.username;
         await removeBotTypingListener(this.modify, rid, DialogflowBotUsername);
     }
 }

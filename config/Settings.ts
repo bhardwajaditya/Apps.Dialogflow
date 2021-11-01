@@ -2,7 +2,6 @@ import { ISetting, SettingType } from '@rocket.chat/apps-engine/definition/setti
 import { LanguageCode } from '../enum/Dialogflow';
 
 export enum AppSetting {
-    DialogflowBotUsername = 'dialogflow_bot_username',
     DialogflowBotId = 'dialogflow_bot_id',
     DialogflowBotList = 'dialogflow_bot_list_config',
     DialogflowVersion = 'dialog_flow_version',

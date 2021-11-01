@@ -24,7 +24,6 @@ export class OnAgentAssignedHandler {
         const { id: rid, type, servedBy, isOpen, customFields = {}, visitor: { livechatData, token: visitorToken  } } = livechatRoom;
         const { welcomeEventSent = false } = customFields;
 
-        const DialogflowBotUsername: string = await getAppSettingValue(this.read, AppSetting.DialogflowBotUsername);
         const sendWelcomeEvent = await getAppSettingValue(this.read, AppSetting.DialogflowWelcomeIntentOnStart);
         const sendWelcomeMessage = await getAppSettingValue(this.read, AppSetting.DialogflowEnableWelcomeMessage);
 
@@ -36,7 +35,8 @@ export class OnAgentAssignedHandler {
             return;
         }
 
-        if (!servedBy || servedBy.username !== DialogflowBotUsername) {
+        const dialogflowBotList = JSON.parse(await getAppSettingValue(this.read, AppSetting.DialogflowBotList));
+        if (!servedBy || !dialogflowBotList[servedBy.username]) {
             return;
         }
 

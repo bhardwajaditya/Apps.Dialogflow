@@ -51,7 +51,8 @@ export class FulfillmentsEndpoint extends ApiEndpoint {
             if (customFields) {
                 const { disableInput, displayTyping } = customFields;
                 if (disableInput === true) {
-                    const DialogflowBotUsername: string = await getAppSettingValue(read, AppSetting.DialogflowBotUsername);
+                    const room = await read.getRoomReader().getById(rid) as any;
+                    const DialogflowBotUsername = room.servedBy.username;
                     if (displayTyping === true) {
                         await botTypingListener(modify, rid, DialogflowBotUsername);
                     } else {

@@ -1,8 +1,10 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
+import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { IMessage } from '@rocket.chat/apps-engine/definition/messages';
 import { RoomType } from '@rocket.chat/apps-engine/definition/rooms';
 import { AppSetting } from '../config/Settings';
+import { Logs } from '../enum/Logs';
 import { getAppSettingValue } from '../lib/Settings';
 
 export const handleTimeout = async (app: IApp, message: IMessage, read: IRead, http: IHttp, persistence: IPersistence, modify: IModify ) => {
@@ -11,7 +13,14 @@ export const handleTimeout = async (app: IApp, message: IMessage, read: IRead, h
         return;
     }
 
-    const dialogflowBotUsername: string = (await getAppSettingValue(read, AppSetting.DialogflowBotUsername));
+    const room = message.room as ILivechatRoom;
+
+    if (!room.servedBy) {
+        if (app) { app.getLogger().error(Logs.EMPTY_BOT_USERNAME_SETTING); }
+        return;
+    }
+
+    const dialogflowBotUsername = room.servedBy.username;
     const chasitorIdleTimeoutIsEnabled: string = (await getAppSettingValue(read, AppSetting.DialogflowEnableCustomerTimeout));
 
     if (chasitorIdleTimeoutIsEnabled) {

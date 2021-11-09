@@ -20,18 +20,19 @@ export class EventScheduler implements IProcessor {
     }
 
     public processor = async (jobContext: IJobContext, read: IRead, modify: IModify, http: IHttp, persis: IPersistence): Promise<void> => {
-        const data = await retrieveDataByAssociation(read, getRoomAssoc(jobContext.rid));
+        const rid = jobContext.rid;
+        const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
 
         const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
 
         const event = { name: jobContext.eventName, languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN, parameters: {} };
         const response: IDialogflowMessage = (await Dialogflow.sendRequest(http, read, modify, jobContext.rid, event, DialogflowRequestType.EVENT));
 
-        const room = await read.getRoomReader().getById(jobContext.rid) as ILivechatRoom;
+        const room = await read.getRoomReader().getById(rid) as ILivechatRoom;
         if (!room || !room.isOpen) { throw new Error('Error! Invalid session Id. No active room found with the given session id'); }
         const { visitor: { token: visitorToken } } = room;
 
-        await handleResponse(this.app, read, modify, http, persis, jobContext.rid, visitorToken, response );
+        await handleResponse(this.app, read, modify, http, persis, rid, visitorToken, response );
 
     }
 }

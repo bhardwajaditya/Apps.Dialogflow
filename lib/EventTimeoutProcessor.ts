@@ -19,7 +19,7 @@ export class EventScheduler implements IProcessor {
 
         const data = await retrieveDataByAssociation(read, getRoomAssoc(jobContext.rid));
 
-        const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
+        const defaultLanguageCode = await Dialogflow.getLivechatAgentCredentials(read, jobContext.rid, 'agent_default_language');
 
         const event = { name: jobContext.eventName, languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN, parameters: {} };
         const response = await Dialogflow.sendRequest(http, read, modify, jobContext.rid, event, DialogflowRequestType.EVENT);

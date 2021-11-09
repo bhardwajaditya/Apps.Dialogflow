@@ -14,10 +14,12 @@ export const updateRoomCustomFields = async (rid: string, data: any, read: IRead
     if (!rid) {
         return;
     }
-    const room = await read.getRoomReader().getById(rid);
+    const room = await read.getRoomReader().getById(rid) as ILivechatRoom;
     if (!room) { throw new Error(`${Logs.INVALID_ROOM_ID} ${rid}`); }
 
-    const botUserName = await getAppSettingValue(read, AppSetting.DialogflowBotUsername);
+    if (!room.servedBy) { throw new Error(Logs.EMPTY_BOT_USERNAME_SETTING); }
+
+    const botUserName = room.servedBy.username;
     if (!botUserName) { throw new Error(Logs.EMPTY_BOT_USERNAME_SETTING); }
 
     const user = await read.getUserReader().getByUsername(botUserName);
@@ -36,10 +38,12 @@ export const updateRoomCustomFields = async (rid: string, data: any, read: IRead
 };
 
 export const closeChat = async (modify: IModify, read: IRead, rid: string, persistence?: IPersistence) => {
-    const room: IRoom = (await read.getRoomReader().getById(rid)) as IRoom;
+    const room: ILivechatRoom = (await read.getRoomReader().getById(rid)) as ILivechatRoom;
     if (!room) { throw new Error(Logs.INVALID_ROOM_ID); }
 
-    const DialogflowBotUsername: string = await getAppSettingValue(read, AppSetting.DialogflowBotUsername);
+    if (!room.servedBy) { throw new Error(Logs.EMPTY_BOT_USERNAME_SETTING); }
+
+    const DialogflowBotUsername = room.servedBy.username;
     await removeBotTypingListener(modify, rid, DialogflowBotUsername);
 
     const closeChatMessage = await getAppSettingValue(read, AppSetting.DialogflowCloseChatMessage);
@@ -62,7 +66,9 @@ export const performHandover = async (app: IApp, modify: IModify, read: IRead, r
     };
 
     const removeBotTypingIndicator = async () => {
-        const DialogflowBotUsername: string = await getAppSettingValue(read, AppSetting.DialogflowBotUsername);
+        if (!room.servedBy) { throw new Error(Logs.EMPTY_BOT_USERNAME_SETTING); }
+
+        const DialogflowBotUsername = room.servedBy.username;
         await removeBotTypingListener(modify, rid, DialogflowBotUsername);
     };
 

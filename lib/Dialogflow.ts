@@ -20,7 +20,6 @@ class DialogflowClass {
                              sessionId: string,
                              request: IDialogflowEvent | string,
                              requestType: DialogflowRequestType): Promise<any> {
-        const dialogFlowVersion = await getAppSettingValue(read, AppSetting.DialogflowVersion);
 
         const room = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
         const { id: rid, visitor: { livechatData, token: visitorToken  } } = room;
@@ -29,7 +28,8 @@ class DialogflowClass {
 
         const data = await retrieveDataByAssociation(read, getRoomAssoc(sessionId));
 
-        const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
+        const defaultLanguageCode = await this.getLivechatAgentCredentials(read, rid, 'agent_default_language');
+        const dialogFlowVersion = await this.getLivechatAgentCredentials(read, sessionId, 'version');
 
         if (dialogFlowVersion === 'CX') {
 
@@ -337,34 +337,48 @@ class DialogflowClass {
         }
     }
 
+    public async getLivechatAgentCredentials(read: IRead, sessionId: string, type: string) {
+
+        try {
+            const dialogflowBotList = JSON.parse(await getAppSettingValue(read, AppSetting.DialogflowBotList));
+            const room = await read.getRoomReader().getById(sessionId) as any;
+            const agentName = room.servedBy.username;
+
+            if (!dialogflowBotList[agentName]) {
+                console.error(Logs.NO_AGENT_IN_CONFIG_WITH_CURRENT_AGENT_NAME, agentName);
+                throw Error(`Agent ${ agentName } not found in Dialogflow Agent Endpoints`);
+            }
+            return dialogflowBotList[agentName][type];
+
+        } catch (e) {
+            console.error(Logs.AGENT_CONFIG_FORMAT_ERROR);
+            throw new Error(e);
+        }
+
+    }
+
     private async getServerURL(read: IRead, modify: IModify, http: IHttp, sessionId: string) {
-        const botId = await getAppSettingValue(read, AppSetting.DialogflowBotId);
-        const projectIds = (await getAppSettingValue(read, AppSetting.DialogflowProjectId)).split(',');
-        const projectId = projectIds.length >= botId ? projectIds[botId - 1] : projectIds[0];
-        const environments = (await getAppSettingValue(read, AppSetting.DialogflowEnvironment)).split(',');
-        const environment = environments.length >= botId ? environments[botId - 1] : environments[0];
-        const dialogFlowVersion = await getAppSettingValue(read, AppSetting.DialogflowVersion);
+        const projectId = await this.getLivechatAgentCredentials(read, sessionId, 'project_id');
+        const environmentId = await this.getLivechatAgentCredentials(read, sessionId, 'environment_id');
+        const dialogFlowVersion = await this.getLivechatAgentCredentials(read, sessionId, 'version');
 
         if (dialogFlowVersion === 'CX') {
 
-            const regionId = await getAppSettingValue(read, AppSetting.DialogflowRegion);
-            const agentId = await getAppSettingValue(read, AppSetting.DialogflowAgentId);
+            const regionId = await this.getLivechatAgentCredentials(read, sessionId, 'agent_region');
+            const agentId = await this.getLivechatAgentCredentials(read, sessionId, 'agent_id');
 
-            return `https://${regionId}-dialogflow.googleapis.com/v3/projects/${projectId}/locations/${regionId}/agents/${agentId}/sessions/${sessionId}:detectIntent`;
+            return `https://${regionId}-dialogflow.googleapis.com/v3/projects/${projectId}/locations/${regionId}/agents/${agentId}/environments/${environmentId || 'draft'}/sessions/${sessionId}:detectIntent`;
         }
 
         const accessToken = await this.getAccessToken(read, modify, http, sessionId);
         if (!accessToken) { throw Error(Logs.ACCESS_TOKEN_ERROR); }
-        return `https://dialogflow.googleapis.com/v2/projects/${projectId}/agent/environments/${environment || 'draft'}/users/-/sessions/${sessionId}:detectIntent?access_token=${accessToken}`;
+        return `https://dialogflow.googleapis.com/v2/projects/${projectId}/agent/environments/${environmentId || 'draft'}/users/-/sessions/${sessionId}:detectIntent?access_token=${accessToken}`;
     }
 
     private async getAccessToken(read: IRead, modify: IModify, http: IHttp, sessionId: string) {
 
-        const botId = await getAppSettingValue(read, AppSetting.DialogflowBotId);
-        const clientEmails = (await getAppSettingValue(read, AppSetting.DialogflowClientEmail)).split(',');
-        const privateKeys = (await getAppSettingValue(read, AppSetting.DialogFlowPrivateKey)).split(',');
-        const privateKey = privateKeys.length >= botId ? privateKeys[botId - 1] : privateKeys[0];
-        const clientEmail = clientEmails.length >= botId ? clientEmails[botId - 1] : clientEmails[0];
+        const privateKey = await this.getLivechatAgentCredentials(read, sessionId, 'private_key');
+        const clientEmail = await this.getLivechatAgentCredentials(read, sessionId, 'client_email');
 
         if (!privateKey || !clientEmail) { throw new Error(Logs.EMPTY_CLIENT_EMAIL_OR_PRIVATE_KEY_SETTING); }
 

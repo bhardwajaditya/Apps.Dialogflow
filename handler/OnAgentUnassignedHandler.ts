@@ -19,16 +19,18 @@ export class OnAgentUnassignedHandler {
 
     public async run() {
         const livechatRoom: ILivechatRoom = this.context.room as ILivechatRoom;
-        const DialogflowBotUsername: string = await getAppSettingValue(this.read, AppSetting.DialogflowBotUsername);
         const { isChatBotFunctional: allowChatBotSession } = this.context.room.customFields as any;
         const {id: rid} = livechatRoom;
-
-        await removeBotTypingListener(this.modify, rid, DialogflowBotUsername);
 
         if (!livechatRoom.servedBy) {
             return;
         }
-        if (livechatRoom.servedBy.username === DialogflowBotUsername && allowChatBotSession === false) {
+
+        await removeBotTypingListener(this.modify, rid, livechatRoom.servedBy.username);
+
+        const dialogflowBotList = JSON.parse(await getAppSettingValue(this.read, AppSetting.DialogflowBotList));
+
+        if (dialogflowBotList[livechatRoom.servedBy.username] && allowChatBotSession === false) {
                 const offlineMessage: string = await getAppSettingValue(this.read, AppSetting.DialogflowServiceUnavailableMessage);
 
                 await createMessage(livechatRoom.id, this.read, this.modify, { text: offlineMessage }, this.app);
@@ -42,10 +44,10 @@ export class OnAgentUnassignedHandler {
 
 export const closeChat = async (modify: IModify, read: IRead, rid: string) => {
     await cancelAllSessionMaintenanceJobForSession(modify, rid);
-    const room: IRoom = (await read.getRoomReader().getById(rid)) as IRoom;
+    const room = (await read.getRoomReader().getById(rid)) as any;
     if (!room) { throw new Error(Logs.INVALID_ROOM_ID); }
 
-    const DialogflowBotUsername: string = await getAppSettingValue(read, AppSetting.DialogflowBotUsername);
+    const DialogflowBotUsername = room.servedBy.username;
     await removeBotTypingListener(modify, rid, DialogflowBotUsername);
 
     const closeChatMessage = await getAppSettingValue(read, AppSetting.DialogflowCloseChatMessage);

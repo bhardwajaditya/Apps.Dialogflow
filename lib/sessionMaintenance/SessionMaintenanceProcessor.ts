@@ -39,7 +39,7 @@ export class SessionMaintenanceProcessor implements IProcessor {
 
         const data = await retrieveDataByAssociation(read, getRoomAssoc(jobContext.sessionId));
 
-        const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
+        const defaultLanguageCode = await Dialogflow.getLivechatAgentCredentials(read, jobContext.rid, 'agent_default_language');
 
         try {
             const eventData = {

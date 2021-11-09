@@ -2,14 +2,9 @@ import { ISetting, SettingType } from '@rocket.chat/apps-engine/definition/setti
 import { LanguageCode } from '../enum/Dialogflow';
 
 export enum AppSetting {
-    DialogflowBotUsername = 'dialogflow_bot_username',
     DialogflowBotId = 'dialogflow_bot_id',
-    DialogflowProjectId = 'dialogflow_project_id',
+    DialogflowBotList = 'dialogflow_bot_list_config',
     DialogflowVersion = 'dialog_flow_version',
-    DialogflowClientEmail = 'dialogflow_client_email',
-    DialogFlowPrivateKey = 'dialogflow_private_key',
-    DialogflowEnvironment = 'dialogflow_environment',
-    DialogflowDefaultLanguage = 'dialogflow_default_language',
     DialogflowFallbackResponsesLimit = 'dialogflow_fallback_responses_limit',
     FallbackTargetDepartment = 'fallback_target_department',
     DialogflowHandoverMessage = 'dialogflow_handover_message',
@@ -29,8 +24,6 @@ export enum AppSetting {
     DialogflowSessionMaintenanceInterval = 'dialogflow_session_maintenance_interval',
     DialogflowSessionMaintenanceEventName = 'dialogflow_session_maintenance_event_name',
     DialogflowLogLevel = 'log_level',
-    DialogflowAgentId = 'dialogflow_cx_agent_id',
-    DialogflowRegion = 'dialogflow_cx_region',
     DialogflowCXFallbackEvents = 'dialogflow_cx_fallback_events',
 }
 
@@ -49,97 +42,14 @@ export enum DefaultMessage {
 }
 
 export const settings: Array<ISetting> = [
+
     {
-        id: AppSetting.DialogflowVersion,
+        id: AppSetting.DialogflowBotList,
         public: true,
-        type: SettingType.SELECT,
-        packageValue: 'ES',
-        i18nLabel: 'agent_version',
-        values: [
-            { key: 'ES', i18nLabel: 'ES' },
-            { key: 'CX', i18nLabel: 'CX' },
-        ],
-        required: true,
-    },
-    {
-        id: AppSetting.DialogflowBotUsername,
-        public: true,
-        type: SettingType.STRING,
-        packageValue: 'virtualassistant',
-        i18nLabel: 'bot_username',
-        required: true,
-    },
-    {
-        id: AppSetting.DialogflowBotId,
-        public: true,
-        type: SettingType.NUMBER,
-        packageValue: 1,
-        value: 1,
-        i18nLabel: 'dialogflow_bot_id',
-        i18nDescription: 'dialogflow_bot_id_description',
-        required: true,
-    },
-    {
-        id: AppSetting.DialogflowProjectId,
-        public: true,
-        type: SettingType.STRING,
-        packageValue: '',
-        i18nLabel: 'dialogflow_project_id',
-        required: true,
-    },
-    {
-        id: AppSetting.DialogflowClientEmail,
-        public: true,
-        type: SettingType.STRING,
-        packageValue: '',
-        i18nLabel: 'dialogflow_client_email',
-        required: true,
-    },
-    {
-        id: AppSetting.DialogFlowPrivateKey,
-        public: true,
-        type: SettingType.STRING,
-        packageValue: '',
-        i18nLabel: 'dialogflow_private_key',
-        required: true,
-    },
-    {
-        id: AppSetting.DialogflowEnvironment,
-        public: true,
-        type: SettingType.STRING,
-        packageValue: 'draft',
-        i18nLabel: 'dialogflow_environment',
-        i18nDescription: 'dialogflow_environment_description',
-        required: false,
-    },
-    {
-        id: AppSetting.DialogflowAgentId,
-        public: true,
-        type: SettingType.STRING,
-        packageValue: '',
-        i18nLabel: 'dialogflow_cx_agent_id',
-        i18nDescription: 'dialogflow_cx_agent_id_desc',
-        required: false,
-    },
-    {
-        id: AppSetting.DialogflowRegion,
-        public: true,
-        type: SettingType.STRING,
-        packageValue: '',
-        i18nLabel: 'dialogflow_cx_region',
-        i18nDescription: 'dialogflow_cx_region_desc',
-        required: false,
-    },
-    {
-        id: AppSetting.DialogflowDefaultLanguage,
-        public: true,
-        type: SettingType.SELECT,
-        packageValue: LanguageCode.EN,
-        i18nLabel: 'dialogflow_default_language',
-        values: [
-            { key: LanguageCode.EN, i18nLabel: 'English (en)' },
-            { key: LanguageCode.PTBR, i18nLabel: 'Portuguese - Brazil (pt-BR)' },
-        ],
+        type: SettingType.CODE,
+        packageValue: `{\n    "omnichannel_agent1_name": {\n        "project_id": "",\n        "client_email": "",\n        "agent_id": "",\n        "agent_region": "",\n        "agent_default_language": "EN",\n        "environment_id": "",\n        "private_key": "",\n        "agent_version": ""\n    },\n    "omnichannel_agent2_name": {...}\n}`,
+        i18nLabel: 'dialogflow_bot_list_config',
+        i18nDescription: 'dialogflow_bot_list_config_description',
         required: true,
     },
     {

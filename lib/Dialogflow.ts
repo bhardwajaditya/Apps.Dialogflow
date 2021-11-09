@@ -236,7 +236,6 @@ class DialogflowClass {
             let currentMessageType = 'text';
 
             if (responseMessages) {
-                console.log(responseMessages);
                 responseMessages.forEach((message) => {
                     const { text, payload: { quickReplies = null, customFields = null, action = null, isFallback = false } = {} } = message;
 

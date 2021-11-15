@@ -15,6 +15,7 @@ import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
+import { sendEventToDialogFlow } from '../lib/sendEventToDialogFlow';
 import { getAppSettingValue } from '../lib/Settings';
 import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
 import { handleTimeout } from '../lib/Timeout';
@@ -28,10 +29,9 @@ export class PostMessageSentHandler {
                 private readonly modify: IModify) { }
 
     public async run() {
-        const { text, editedAt, room, token, sender, customFields } = this.message;
-        const livechatRoom = room as ILivechatRoom;
-
-        const { id: rid, type, servedBy, isOpen, customFields: roomCustomFields } = livechatRoom;
+        const { text, editedAt, room, sender, customFields, file } = this.message;
+        const { id: rid, type, servedBy, isOpen, customFields: roomCustomFields,
+            visitor: { token: visitorToken, username: visitorUsername } } = room as ILivechatRoom;
 
         const DialogflowBotUsername: string = await getAppSettingValue(this.read, AppSetting.DialogflowBotUsername);
 
@@ -67,11 +67,17 @@ export class PostMessageSentHandler {
             }
         }
 
-        if (!text || editedAt) {
+        if (!servedBy || servedBy.username !== DialogflowBotUsername) {
             return;
         }
 
-        if (!servedBy || servedBy.username !== DialogflowBotUsername) {
+        if (file && sender.username === visitorUsername) {
+            const fileAttachmentEventName: string = await getAppSettingValue(this.read, AppSetting.DialogflowFileAttachmentEventName);
+            await sendEventToDialogFlow(this.app, this.read, this.modify, this.persistence, this.http, rid, fileAttachmentEventName);
+            return;
+        }
+
+        if (!text || editedAt) {
             return;
         }
 
@@ -79,17 +85,16 @@ export class PostMessageSentHandler {
             return;
         }
 
-        let messageText = text;
-        messageText = await removeQuotedMessage(this.read, room, messageText);
-
         await handleTimeout(this.app, this.message, this.read, this.http, this.persistence, this.modify);
 
         if (sender.username === DialogflowBotUsername) {
             return;
         }
 
+        let messageText = text;
+        messageText = await removeQuotedMessage(this.read, room, messageText);
+
         let response: IDialogflowMessage;
-        const { visitor: { token: visitorToken } } = room as ILivechatRoom;
 
         try {
             await botTypingListener(this.modify, rid, DialogflowBotUsername);

@@ -29,6 +29,7 @@ export enum AppSetting {
     DialogflowCustomerTimeoutWarningMessage = 'dialogflow_customer_timeout_warning_message',
     DialogflowSessionMaintenanceInterval = 'dialogflow_session_maintenance_interval',
     DialogflowSessionMaintenanceEventName = 'dialogflow_session_maintenance_event_name',
+    DialogflowFileAttachmentEventName = 'dialogflow_file_attachment_event_name',
     DialogflowLogLevel = 'log_level',
     DialogflowAgentId = 'dialogflow_cx_agent_id',
     DialogflowRegion = 'dialogflow_cx_region',
@@ -317,6 +318,15 @@ export const settings: Array<ISetting> = [
         packageValue: 'session_maintenance',
         i18nLabel: 'dialogflow_session_maintenance_event_name',
         i18nDescription: 'dialogflow_session_maintenance_event_name_description',
+        required: false,
+    },
+    {
+        id: AppSetting.DialogflowFileAttachmentEventName,
+        public: true,
+        type: SettingType.STRING,
+        packageValue: 'file_attachment_event',
+        i18nLabel: 'dialogflow_file_attachment_event_name',
+        i18nDescription: 'dialogflow_file_attachment_event_name_description',
         required: false,
     },
     {

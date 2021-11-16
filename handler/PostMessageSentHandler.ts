@@ -152,6 +152,7 @@ export class PostMessageSentHandler {
     }
 
     private async handleClosedByVisitor(rid: string, read: IRead) {
+        // tslint:disable-next-line: max-line-length
         const DialogflowEnableChatClosedByVisitorEvent: boolean = await getLivechatAgentCredentials(this.read, rid, AgentSettings.ENABLE_CHAT_CLOSED_BY_VISITOR);
         const DialogflowChatClosedByVisitorEventName: string = await getLivechatAgentCredentials(this.read, rid, AgentSettings.CHAT_CLOSED_BY_VISITOR_EVENT);
         await this.removeBotTypingListener(read, rid);

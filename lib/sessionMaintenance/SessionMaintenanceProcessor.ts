@@ -1,13 +1,12 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { IJobContext, IProcessor } from '@rocket.chat/apps-engine/definition/scheduler';
-import { AppSetting } from '../../config/Settings';
+import { AgentSettings } from '../../enum/AgentSettings';
 import { DialogflowRequestType, LanguageCode } from '../../enum/Dialogflow';
 import { JobName } from '../../enum/Scheduler';
-import { Dialogflow } from '../../lib/Dialogflow';
+import { Dialogflow, getLivechatAgentCredentials } from '../../lib/Dialogflow';
 import { getRoomAssoc, retrieveDataByAssociation } from '../../lib/Persistence';
 import { cancelAllSessionMaintenanceJobForSession } from '../../lib/Scheduler';
-import { getAppSettingValue } from '../../lib/Settings';
 import { SessionMaintenanceOnceSchedule } from './SessionMaintenanceOnceSchedule';
 
 export class SessionMaintenanceProcessor implements IProcessor {
@@ -29,8 +28,8 @@ export class SessionMaintenanceProcessor implements IProcessor {
             return;
         }
 
-        const sessionMaintenanceInterval: string = await getAppSettingValue(read, AppSetting.DialogflowSessionMaintenanceInterval);
-        const sessionMaintenanceEventName: string = await getAppSettingValue(read, AppSetting.DialogflowSessionMaintenanceEventName);
+        const sessionMaintenanceInterval: string = await getLivechatAgentCredentials(read, jobContext.sessionId, AgentSettings.SESSION_MAINTENANCE_INTERVAL);
+        const sessionMaintenanceEventName: string = await getLivechatAgentCredentials(read, jobContext.sessionId, AgentSettings.SESSION_MAINTENANCE_EVENT_NAME);
 
         if (!sessionMaintenanceEventName || !sessionMaintenanceInterval) {
             console.log('Session Maintenance Settings not configured');
@@ -39,7 +38,7 @@ export class SessionMaintenanceProcessor implements IProcessor {
 
         const data = await retrieveDataByAssociation(read, getRoomAssoc(jobContext.sessionId));
 
-        const defaultLanguageCode = await Dialogflow.getLivechatAgentCredentials(read, jobContext.rid, 'agent_default_language');
+        const defaultLanguageCode = await getLivechatAgentCredentials(read, jobContext.rid, 'agent_default_language');
 
         try {
             const eventData = {

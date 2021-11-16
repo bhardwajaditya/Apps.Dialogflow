@@ -3,11 +3,12 @@ import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatMessage, ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { RoomType } from '@rocket.chat/apps-engine/definition/rooms';
 import { AppSetting } from '../config/Settings';
+import { AgentSettings } from '../enum/AgentSettings';
 import { DialogflowRequestType, IDialogflowMessage, IDialogflowQuickReplies, LanguageCode, Message } from '../enum/Dialogflow';
 
 import { Logs } from '../enum/Logs';
 import { botTypingListener, removeBotTypingListener } from '../lib//BotTyping';
-import { Dialogflow } from '../lib/Dialogflow';
+import { Dialogflow, getLivechatAgentCredentials } from '../lib/Dialogflow';
 import { getErrorMessage } from '../lib/Helper';
 import { createDialogflowMessage, createMessage, removeQuotedMessage } from '../lib/Message';
 import { handlePayloadActions } from '../lib/payloadAction';
@@ -98,10 +99,10 @@ export class PostMessageSentHandler {
             this.app.getLogger().error(errorContent);
             console.error(errorContent);
 
-            const serviceUnavailable: string = await getAppSettingValue(this.read, AppSetting.DialogflowServiceUnavailableMessage);
+            const serviceUnavailable: string = await getLivechatAgentCredentials(this.read, rid, AgentSettings.SERVICE_UNAVAILABLE_MESSAGE);
             await createMessage(rid, this.read, this.modify, { text: serviceUnavailable }, this.app);
 
-            const targetDepartment: string = await getAppSettingValue(this.read, AppSetting.FallbackTargetDepartment);
+            const targetDepartment: string = await getLivechatAgentCredentials(this.read, rid, AgentSettings.FALLBACK_TARGET_DEPARTMENT);
             if (!targetDepartment) {
                 console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
                 return;
@@ -151,14 +152,14 @@ export class PostMessageSentHandler {
     }
 
     private async handleClosedByVisitor(rid: string, read: IRead) {
-        const DialogflowEnableChatClosedByVisitorEvent: boolean = await getAppSettingValue(this.read, AppSetting.DialogflowEnableChatClosedByVisitorEvent);
-        const DialogflowChatClosedByVisitorEventName: string = await getAppSettingValue(this.read, AppSetting.DialogflowChatClosedByVisitorEventName);
+        const DialogflowEnableChatClosedByVisitorEvent: boolean = await getLivechatAgentCredentials(this.read, rid, AgentSettings.ENABLE_CHAT_CLOSED_BY_VISITOR);
+        const DialogflowChatClosedByVisitorEventName: string = await getLivechatAgentCredentials(this.read, rid, AgentSettings.CHAT_CLOSED_BY_VISITOR_EVENT);
         await this.removeBotTypingListener(read, rid);
 
         const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
         if (DialogflowEnableChatClosedByVisitorEvent) {
             try {
-                const defaultLanguageCode = LanguageCode[await Dialogflow.getLivechatAgentCredentials(read, rid, 'agent_default_language')];
+                const defaultLanguageCode = LanguageCode[await getLivechatAgentCredentials(read, rid, AgentSettings.AGENT_DEFAULT_LANGUAGE)];
 
                 let res: IDialogflowMessage;
                 res = (await Dialogflow.sendRequest(this.http, this.read, this.modify,  rid, {

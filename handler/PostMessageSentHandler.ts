@@ -11,7 +11,7 @@ import { Dialogflow } from '../lib/Dialogflow';
 import { getErrorMessage } from '../lib/Helper';
 import { createDialogflowMessage, createMessage, removeQuotedMessage } from '../lib/Message';
 import { handleResponse } from '../lib/payloadAction';
-import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
+import { getIsProcessingMessage, getRoomAssoc, retrieveDataByAssociation, setIsProcessingMessage } from '../lib/Persistence';
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
@@ -96,10 +96,20 @@ export class PostMessageSentHandler {
 
         let response: IDialogflowMessage;
 
+        const isProcessingMessage = await getIsProcessingMessage(this.read, rid);
+
+        if (isProcessingMessage) {
+            console.error(`DF is processing previous message in room ${rid}. So dropping this message with id ${this.message.id}`);
+            return;
+        }
+
         try {
+            await setIsProcessingMessage(this.persistence, rid, true);
             await botTypingListener(this.modify, rid, DialogflowBotUsername);
             response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, messageText, DialogflowRequestType.MESSAGE));
+            await setIsProcessingMessage(this.persistence, rid, false);
         } catch (error) {
+            await setIsProcessingMessage(this.persistence, rid, false);
             const errorContent = `${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${rid} } ${getErrorMessage(error)}`;
             this.app.getLogger().error(errorContent);
             console.error(errorContent);

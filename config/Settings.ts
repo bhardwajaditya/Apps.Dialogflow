@@ -1,9 +1,37 @@
 import { ISetting, SettingType } from '@rocket.chat/apps-engine/definition/settings';
+import { LanguageCode } from '../enum/Dialogflow';
 import { IDFSetting } from './ISetting';
 
 export enum AppSetting {
     DialogflowBotList = 'dialogflow_bot_list_config',
+    DialogflowAgentProjectId = 'project_id',
+    DialogflowAgentId = 'agent_id',
+    DialogflowAgentClientEmail = 'client_email',
+    DialogflowAgentRegion = 'agent_region',
+    DialogflowAgentDefaultLanguage = 'agent_default_language',
+    DialogflowAgentVersion = 'agent_version',
+    DialogflowAgentEnvironmentId = 'environment_id',
+    DialogflowAgentPrivateKey = 'private_key',
+    DialogflowFallbackResponsesLimit = 'fallback_responses_limit',
+    FallbackTargetDepartment = 'fallback_target_department',
+    DialogflowHandoverMessage = 'handover_message',
+    DialogflowServiceUnavailableMessage = 'service_unavailable_message',
+    DialogflowHandoverFailedMessage = 'no_agents_for_handover_message',
+    DialogflowCloseChatMessage = 'close_chat_message',
+    DialogflowHideQuickReplies = 'hide_quickreplies',
+    DialogflowEnableChatClosedByVisitorEvent = 'enable_chat_closed_by_visitor_event',
+    DialogflowEnableWelcomeMessage = 'enable_welcome_message',
+    DialogflowWelcomeMessage = 'welcome_message',
+    DialogflowChatClosedByVisitorEventName = 'chat_closed_by_visitor_event',
+    DialogflowWelcomeIntentOnStart = 'welcome_intent_on_start',
+    DialogflowEnableCustomerTimeout = 'enable_customer_timeout',
+    DialogflowCustomerTimeoutTime = 'customer_timeout_time',
+    DialogflowCustomerTimeoutWarningTime = 'customer_timeout_warning_time',
+    DialogflowCustomerTimeoutWarningMessage = 'customer_timeout_warning_message',
+    DialogflowSessionMaintenanceInterval = 'session_maintenance_interval',
+    DialogflowSessionMaintenanceEventName = 'session_maintenance_event_name',
     DialogflowLogLevel = 'log_level',
+    DialogflowCXFallbackEvents = 'dialogflow_cx_fallback_events',
 }
 
 export enum ServerSetting {
@@ -26,7 +54,7 @@ export const settings: Array<IDFSetting> = [
         id: AppSetting.DialogflowBotList,
         public: true,
         type: 'multiCode',
-        packageValue: JSON.stringify([
+        packageValue: JSON.stringify(
             {
                 omnichannel_agent: {
                     project_id: '',
@@ -57,8 +85,7 @@ export const settings: Array<IDFSetting> = [
                     session_maintenance_interval: '5 minutes',
                     session_maintenance_event_name: 'session_maintenance',
                 },
-            },
-          ], null, '\t'),
+            }, null, '\t'),
         i18nLabel: 'dialogflow_bot_list_config',
         i18nDescription: 'dialogflow_bot_list_config_description',
         required: true,

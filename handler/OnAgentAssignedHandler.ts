@@ -2,14 +2,12 @@ import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/de
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatEventContext, ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { RoomType } from '@rocket.chat/apps-engine/definition/rooms';
-import { Agent } from 'http';
 import { AppSetting, DefaultMessage } from '../config/Settings';
-import { AgentSettings } from '../enum/AgentSettings';
 import { IDialogflowCustomFields } from '../enum/Dialogflow';
-import { getLivechatAgentCredentials } from '../lib/Dialogflow';
 import { createMessage } from '../lib/Message';
 import { updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
+import { getLivechatAgentCredentials } from '../lib/Settings';
 import { getAppSettingValue } from '../lib/Settings';
 
 export class OnAgentAssignedHandler {
@@ -27,8 +25,8 @@ export class OnAgentAssignedHandler {
         const { id: rid, type, servedBy, isOpen, customFields = {}, visitor: { livechatData, token: visitorToken  } } = livechatRoom;
         const { welcomeEventSent = false } = customFields;
 
-        const sendWelcomeEvent = await getLivechatAgentCredentials(this.read, rid, AgentSettings.WELCOME_INTENT_ON_START);
-        const sendWelcomeMessage = await getLivechatAgentCredentials(this.read, rid, AgentSettings.ENABLE_WELCOME_MESSAGE);
+        const sendWelcomeEvent = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowWelcomeIntentOnStart);
+        const sendWelcomeMessage = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowEnableWelcomeMessage);
 
         if (!type || type !== RoomType.LIVE_CHAT) {
             return;
@@ -53,7 +51,7 @@ export class OnAgentAssignedHandler {
                 disableInputMessage: 'Starting chat...',
                 displayTyping: true,
             };
-            const welcomeMessage: string = await getLivechatAgentCredentials(this.read, rid, AgentSettings.WELCOME_MESSAGE);
+            const welcomeMessage: string = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowWelcomeMessage);
             await createMessage(rid, this.read, this.modify,
                 {
                     text: welcomeMessage || DefaultMessage.DEFAULT_DialogflowWelcomeMessage,

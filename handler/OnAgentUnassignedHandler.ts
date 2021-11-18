@@ -2,12 +2,11 @@ import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/de
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatEventContext, ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { AppSetting, DefaultMessage } from '../config/Settings';
-import { AgentSettings } from '../enum/AgentSettings';
 import { Logs } from '../enum/Logs';
 import { removeBotTypingListener } from '../lib//BotTyping';
-import { getLivechatAgentCredentials } from '../lib/Dialogflow';
 import { createMessage } from '../lib/Message';
 import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
+import { getLivechatAgentCredentials } from '../lib/Settings';
 import { getAppSettingValue } from '../lib/Settings';
 
 export class OnAgentUnassignedHandler {
@@ -32,7 +31,7 @@ export class OnAgentUnassignedHandler {
         const dialogflowBotList = JSON.parse(await getAppSettingValue(this.read, AppSetting.DialogflowBotList));
 
         if (dialogflowBotList[livechatRoom.servedBy.username] && allowChatBotSession === false) {
-                const offlineMessage: string = await getLivechatAgentCredentials(this.read, rid, AgentSettings.SERVICE_UNAVAILABLE_MESSAGE);
+                const offlineMessage: string = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowServiceUnavailableMessage);
 
                 await createMessage(livechatRoom.id, this.read, this.modify, { text: offlineMessage }, this.app);
 
@@ -51,7 +50,7 @@ export const closeChat = async (modify: IModify, read: IRead, rid: string) => {
     const DialogflowBotUsername = room.servedBy.username;
     await removeBotTypingListener(modify, rid, DialogflowBotUsername);
 
-    const closeChatMessage = await getLivechatAgentCredentials(read, rid, AgentSettings.CLOSE_CHAT_MESSAGE);
+    const closeChatMessage = await getLivechatAgentCredentials(read, rid, AppSetting.DialogflowCloseChatMessage);
 
     const result = await modify.getUpdater().getLivechatUpdater()
                                 .closeRoom(room, closeChatMessage ? closeChatMessage : DefaultMessage.DEFAULT_DialogflowCloseChatMessage);

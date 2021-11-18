@@ -1,16 +1,17 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
+import { AppSetting } from '../config/Settings';
 import { ActionIds } from '../enum/ActionIds';
-import { AgentSettings } from '../enum/AgentSettings';
 import { DialogflowRequestType, IDialogflowAction, IDialogflowMessage, IDialogflowPayload, LanguageCode } from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
 import { JobName } from '../enum/Scheduler';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
-import { Dialogflow, getLivechatAgentCredentials } from './Dialogflow';
+import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
+import { getLivechatAgentCredentials } from './Settings';
 
 export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IModify, http: IHttp, persistence: IPersistence, rid: string, visitorToken: string, dialogflowMessage: IDialogflowMessage) => {
     const { messages = [] } = dialogflowMessage;
@@ -18,7 +19,7 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
         const { action = null } = message as IDialogflowPayload;
         if (action) {
             const { name: actionName, params } = action as IDialogflowAction;
-            const targetDepartment: string = await getLivechatAgentCredentials(read, rid, AgentSettings.FALLBACK_TARGET_DEPARTMENT);
+            const targetDepartment: string = await getLivechatAgentCredentials(read, rid, AppSetting.FallbackTargetDepartment);
             if (actionName) {
                 if (actionName === ActionIds.PERFORM_HANDOVER) {
                     if (!targetDepartment) {
@@ -58,7 +59,7 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                     try {
                         await modify.getScheduler().scheduleOnce(task);
                     } catch (error) {
-                        const serviceUnavailable: string = await getLivechatAgentCredentials(read, rid, AgentSettings.SERVICE_UNAVAILABLE_MESSAGE);
+                        const serviceUnavailable: string = await getLivechatAgentCredentials(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
                         await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
                         return;
                     }
@@ -91,7 +92,7 @@ const sendChangeLanguageEvent = async (app: IApp, read: IRead, modify: IModify, 
         await createDialogflowMessage(rid, read, modify, response, app);
       } catch (error) {
 
-        const serviceUnavailable: string = await getLivechatAgentCredentials(read, rid, AgentSettings.SERVICE_UNAVAILABLE_MESSAGE);
+        const serviceUnavailable: string = await getLivechatAgentCredentials(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
         await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
         return;
     }

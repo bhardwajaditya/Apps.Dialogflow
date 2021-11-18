@@ -3,9 +3,9 @@ import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { IMessage } from '@rocket.chat/apps-engine/definition/messages';
 import { RoomType } from '@rocket.chat/apps-engine/definition/rooms';
-import { AgentSettings } from '../enum/AgentSettings';
+import { AppSetting } from '../config/Settings';
 import { Logs } from '../enum/Logs';
-import { getLivechatAgentCredentials } from './Dialogflow';
+import { getLivechatAgentCredentials } from './Settings';
 
 export const handleTimeout = async (app: IApp, message: IMessage, read: IRead, http: IHttp, persistence: IPersistence, modify: IModify ) => {
 
@@ -21,7 +21,7 @@ export const handleTimeout = async (app: IApp, message: IMessage, read: IRead, h
     }
 
     const dialogflowBotUsername = room.servedBy.username;
-    const chasitorIdleTimeoutIsEnabled: string = (await getLivechatAgentCredentials(read, room.id, AgentSettings.ENABLE_CUSTOMER_TIMEOUT));
+    const chasitorIdleTimeoutIsEnabled: string = (await getLivechatAgentCredentials(read, room.id, AppSetting.DialogflowEnableCustomerTimeout));
 
     if (chasitorIdleTimeoutIsEnabled) {
 
@@ -31,13 +31,13 @@ export const handleTimeout = async (app: IApp, message: IMessage, read: IRead, h
          * The warning disappears (and the timer resets to 0) each time the agent sends message.
          * The warning value must be shorter than the time-out value (we recommend at least 30 seconds).
          */
-        const warningTime: string = (await getLivechatAgentCredentials(read, room.id, AgentSettings.CUSTOMER_TIMEOUT_WARNING_TIME));
+        const warningTime: string = (await getLivechatAgentCredentials(read, room.id, AppSetting.DialogflowCustomerTimeoutWarningTime));
 
         /**
          * Sets the amount of time that a customer has to respond to an agent message before the session ends.
          * The timer stops when the customer sends a message and starts again from 0 on the next agent's message.
          */
-        const timeoutTime: string = (await getLivechatAgentCredentials(read, room.id, AgentSettings.CUSTOMER_TIMEOUT_TIME));
+        const timeoutTime: string = (await getLivechatAgentCredentials(read, room.id, AppSetting.DialogflowCustomerTimeoutTime));
 
         // ------ When agent sends message -----
         // Send new timeout msg and reset previous timeout
@@ -48,7 +48,7 @@ export const handleTimeout = async (app: IApp, message: IMessage, read: IRead, h
         // On Timeout : Close chat
         // On Warning : Show Countdown Popup in Livechat Widget
 
-        const timeoutWarningMessage: string = (await getLivechatAgentCredentials(read, room.id, AgentSettings.CUSTOMER_TIMEOUT_WARNING_MESSAGE));
+        const timeoutWarningMessage: string = (await getLivechatAgentCredentials(read, room.id, AppSetting.DialogflowCustomerTimeoutWarningMessage));
 
         if (message.sender.username === dialogflowBotUsername) {
             // Agent sent message

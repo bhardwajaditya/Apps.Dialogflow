@@ -3,7 +3,7 @@ import { LanguageCode } from '../enum/Dialogflow';
 import { IDFSetting } from './ISetting';
 
 export enum AppSetting {
-    DialogflowBotList = 'dialogflow_bot_list_config',
+    DialogflowBotList = 'agents',
     DialogflowAgentProjectId = 'project_id',
     DialogflowAgentId = 'agent_id',
     DialogflowAgentClientEmail = 'client_email',

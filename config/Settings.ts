@@ -55,7 +55,7 @@ export const settings: Array<IDFSetting> = [
         public: true,
         type: 'multiCode',
         packageValue: JSON.stringify(
-            {
+            [{
                 omnichannel_agent: {
                     project_id: '',
                     client_email: '',
@@ -85,7 +85,7 @@ export const settings: Array<IDFSetting> = [
                     session_maintenance_interval: '5 minutes',
                     session_maintenance_event_name: 'session_maintenance',
                 },
-            }, null, '\t'),
+            }], null, '\t'),
         i18nLabel: 'dialogflow_bot_list_config',
         i18nDescription: 'dialogflow_bot_list_config_description',
         required: true,

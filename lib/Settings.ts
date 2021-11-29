@@ -13,15 +13,18 @@ export const getServerSettingValue = async (read: IRead, id: string) => {
 export const getLivechatAgentCredentials = async (read: IRead, sessionId: string, type: string) => {
 
     try {
+
         const dialogflowBotList = JSON.parse(await getAppSettingValue(read, AppSetting.DialogflowBotList));
         const room = await read.getRoomReader().getById(sessionId) as any;
         const agentName = room.servedBy.username;
 
-        if (!dialogflowBotList[agentName]) {
-            console.error(Logs.NO_AGENT_IN_CONFIG_WITH_CURRENT_AGENT_NAME, agentName);
-            throw Error(`Agent ${ agentName } not found in Dialogflow Agent Endpoints`);
+        for (const dialogflowBot of dialogflowBotList) {
+            if (dialogflowBot[agentName]) {
+                return dialogflowBot[agentName][type];
+            }
         }
-        return dialogflowBotList[agentName][type];
+        console.error(Logs.NO_AGENT_IN_CONFIG_WITH_CURRENT_AGENT_NAME, agentName);
+        throw Error(`Agent ${ agentName } not found in Dialogflow Agent Endpoints`);
 
     } catch (e) {
         console.error(Logs.AGENT_CONFIG_FORMAT_ERROR);

@@ -15,7 +15,7 @@ import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
-import { getLivechatAgentCredentials } from '../lib/Settings';
+import { agentConfigExists, getLivechatAgentCredentials } from '../lib/Settings';
 import { getAppSettingValue } from '../lib/Settings';
 import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
 import { handleTimeout } from '../lib/Timeout';
@@ -29,13 +29,13 @@ export class PostMessageSentHandler {
                 private readonly modify: IModify) { }
 
     public async run() {
+
         const { text, editedAt, room, token, sender, customFields } = this.message;
         const livechatRoom = room as ILivechatRoom;
 
         const { id: rid, type, servedBy, isOpen, customFields: roomCustomFields } = livechatRoom;
 
-        const dialogflowBotList = JSON.parse(await getAppSettingValue(this.read, AppSetting.DialogflowBotList));
-        if (!servedBy || !dialogflowBotList[servedBy.username]) {
+        if (!servedBy || !agentConfigExists(this.read, servedBy.username)) {
             return;
         }
 

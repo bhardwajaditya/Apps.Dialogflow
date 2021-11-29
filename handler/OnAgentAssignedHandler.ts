@@ -7,7 +7,7 @@ import { IDialogflowCustomFields } from '../enum/Dialogflow';
 import { createMessage } from '../lib/Message';
 import { updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
-import { getLivechatAgentCredentials } from '../lib/Settings';
+import { agentConfigExists, getLivechatAgentCredentials } from '../lib/Settings';
 import { getAppSettingValue } from '../lib/Settings';
 
 export class OnAgentAssignedHandler {
@@ -36,8 +36,7 @@ export class OnAgentAssignedHandler {
             return;
         }
 
-        const dialogflowBotList = JSON.parse(await getAppSettingValue(this.read, AppSetting.DialogflowBotList));
-        if (!servedBy || !dialogflowBotList[servedBy.username]) {
+        if (!servedBy || !agentConfigExists(this.read, servedBy.username)) {
             return;
         }
 

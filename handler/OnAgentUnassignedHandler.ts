@@ -6,7 +6,7 @@ import { Logs } from '../enum/Logs';
 import { removeBotTypingListener } from '../lib//BotTyping';
 import { createMessage } from '../lib/Message';
 import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
-import { getLivechatAgentCredentials } from '../lib/Settings';
+import { agentConfigExists, getLivechatAgentCredentials } from '../lib/Settings';
 import { getAppSettingValue } from '../lib/Settings';
 
 export class OnAgentUnassignedHandler {
@@ -30,7 +30,7 @@ export class OnAgentUnassignedHandler {
 
         const dialogflowBotList = JSON.parse(await getAppSettingValue(this.read, AppSetting.DialogflowBotList));
 
-        if (dialogflowBotList[livechatRoom.servedBy.username] && allowChatBotSession === false) {
+        if (await agentConfigExists(this.read, livechatRoom.servedBy.username) && allowChatBotSession === false) {
                 const offlineMessage: string = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowServiceUnavailableMessage);
 
                 await createMessage(livechatRoom.id, this.read, this.modify, { text: offlineMessage }, this.app);

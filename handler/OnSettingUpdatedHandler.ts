@@ -13,9 +13,9 @@ export class OnSettingUpdatedHandler {
         try {
             const dialogflowBotList = JSON.parse(await getAppSettingValue(this.read, AppSetting.DialogflowBotList));
 
-            for (const bot of Object.keys(dialogflowBotList)) {
+            for (const bot of dialogflowBotList) {
 
-                for (const agentname in dialogflowBotList[bot]) {
+                for (const agentname in bot) {
                     if (bot[agentname]) {
                         const privateKey = bot[agentname].private_key;
                         const clientEmail = bot[agentname].client_email;

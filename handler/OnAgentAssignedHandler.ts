@@ -5,6 +5,7 @@ import { RoomType } from '@rocket.chat/apps-engine/definition/rooms';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { IDialogflowCustomFields } from '../enum/Dialogflow';
 import { createMessage } from '../lib/Message';
+import { assignPersistentAgentConfigToRoom } from '../lib/Persistence';
 import { updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
 import { agentConfigExists, getLivechatAgentCredentials } from '../lib/Settings';
@@ -24,6 +25,9 @@ export class OnAgentAssignedHandler {
 
         const { id: rid, type, servedBy, isOpen, customFields = {}, visitor: { livechatData, token: visitorToken  } } = livechatRoom;
         const { welcomeEventSent = false } = customFields;
+
+        const agentConfig = await getLivechatAgentCredentials(this.read, rid);
+        assignPersistentAgentConfigToRoom(this.read, this.persis, rid, agentConfig);
 
         const sendWelcomeEvent = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowWelcomeIntentOnStart);
         const sendWelcomeMessage = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowEnableWelcomeMessage);

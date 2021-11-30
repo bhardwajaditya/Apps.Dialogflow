@@ -7,7 +7,6 @@ import { removeBotTypingListener } from '../lib//BotTyping';
 import { createMessage } from '../lib/Message';
 import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
 import { agentConfigExists, getLivechatAgentCredentials } from '../lib/Settings';
-import { getAppSettingValue } from '../lib/Settings';
 
 export class OnAgentUnassignedHandler {
     constructor(private readonly app: IApp,
@@ -28,13 +27,10 @@ export class OnAgentUnassignedHandler {
 
         await removeBotTypingListener(this.modify, rid, livechatRoom.servedBy.username);
 
-        const dialogflowBotList = JSON.parse(await getAppSettingValue(this.read, AppSetting.DialogflowBotList));
-
         if (await agentConfigExists(this.read, livechatRoom.servedBy.username) && allowChatBotSession === false) {
                 const offlineMessage: string = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowServiceUnavailableMessage);
 
                 await createMessage(livechatRoom.id, this.read, this.modify, { text: offlineMessage }, this.app);
-
                 await closeChat(this.modify, this.read, rid);
             }
 

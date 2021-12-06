@@ -7,14 +7,14 @@ import { getError } from '../lib/Helper';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
 import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
-import { getLivechatAgentCredentials } from './Settings';
+import { getAppSettingValue } from './Settings';
 
 export const WELCOME_EVENT_NAME =  'Welcome';
 
 export const sendWelcomeEventToDialogFlow = async (app: IApp, read: IRead,  modify: IModify, persistence: IPersistence, http: IHttp, rid: string, visitorToken: string, livechatData: any) => {
     try {
         const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
-        const defaultLanguageCode = await getLivechatAgentCredentials(read, rid, AppSetting.DialogflowAgentDefaultLanguage);
+        const defaultLanguageCode = await Dialogflow.getLivechatAgentCredentials(read, rid, 'agent_default_language');
         const event = {
             name: WELCOME_EVENT_NAME,
             languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
@@ -31,7 +31,7 @@ export const sendWelcomeEventToDialogFlow = async (app: IApp, read: IRead,  modi
         await createDialogflowMessage(rid, read, modify, response, app);
     } catch (error) {
         console.error(`${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${rid} } ${getError(error)}`);
-        const serviceUnavailable: string = await getLivechatAgentCredentials(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
+        const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
         await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
         return;
     }

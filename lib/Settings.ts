@@ -46,7 +46,6 @@ export const getLivechatAgentCredentials = async (read: IRead, sessionId: string
 
 export const agentConfigExists = async (read: IRead, agentUsername: string) => {
     const dialogflowBotList = JSON.parse(await getAppSettingValue(read, AppSetting.DialogflowBotList));
-
     for (const dialogflowBot of dialogflowBotList) {
         if (dialogflowBot[agentUsername]) {
             return true;

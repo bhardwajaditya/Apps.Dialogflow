@@ -1,7 +1,4 @@
 import { IRead } from '@rocket.chat/apps-engine/definition/accessors';
-import { AppSetting } from '../config/Settings';
-import { Logs } from '../enum/Logs';
-import { getPersistentAgentConfigToRoom } from './Persistence';
 
 export const getAppSettingValue = async (read: IRead, id: string) => {
     return id && await read.getEnvironmentReader().getSettings().getValueById(id);

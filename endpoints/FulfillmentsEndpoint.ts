@@ -1,6 +1,5 @@
 import { HttpStatusCode, IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { ApiEndpoint, IApiEndpointInfo, IApiRequest, IApiResponse } from '@rocket.chat/apps-engine/definition/api';
-import { AppSetting } from '../config/Settings';
 import { IDialogflowMessage, IDialogflowQuickReplies } from '../enum/Dialogflow';
 import { Headers } from '../enum/Http';
 import { Logs } from '../enum/Logs';
@@ -8,7 +7,6 @@ import { botTypingListener, removeBotTypingListener } from '../lib//BotTyping';
 import { Dialogflow } from '../lib/Dialogflow';
 import { createHttpResponse } from '../lib/Http';
 import { createDialogflowMessage } from '../lib/Message';
-import { getAppSettingValue } from '../lib/Settings';
 
 export class FulfillmentsEndpoint extends ApiEndpoint {
     public path = 'fulfillment';

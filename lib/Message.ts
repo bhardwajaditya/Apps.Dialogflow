@@ -4,12 +4,12 @@ import { ILivechatRoom, IVisitor } from '@rocket.chat/apps-engine/definition/liv
 import { IRoom } from '@rocket.chat/apps-engine/definition/rooms';
 import { BlockElementType, BlockType, ButtonStyle, IActionsBlock, IBlock, IButtonElement, IImageBlock, ITextObject, TextObjectType } from '@rocket.chat/apps-engine/definition/uikit';
 import { IUser } from '@rocket.chat/apps-engine/definition/users';
-import { AppSetting, ServerSetting } from '../config/Settings';
+import { ServerSetting } from '../config/Settings';
 import { ActionIds } from '../enum/ActionIds';
 import { IDialogflowMessage, IDialogflowQuickReplies, IDialogflowQuickReplyOptions } from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
 import { escapeRegExp, uuid } from './Helper';
-import { getAppSettingValue, getServerSettingValue } from './Settings';
+import { getServerSettingValue } from './Settings';
 
 export const createDialogflowMessage = async (rid: string, read: IRead,  modify: IModify, dialogflowMessage: IDialogflowMessage, app?: IApp ): Promise<any> => {
     const { messages = [] } = dialogflowMessage;

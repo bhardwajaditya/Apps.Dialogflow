@@ -5,8 +5,10 @@ import { RoomType } from '@rocket.chat/apps-engine/definition/rooms';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { IDialogflowCustomFields } from '../enum/Dialogflow';
 import { createMessage } from '../lib/Message';
+import { assignPersistentAgentConfigToRoom } from '../lib/Persistence';
 import { updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
+import { agentConfigExists, getLivechatAgentCredentials } from '../lib/Settings';
 import { getAppSettingValue } from '../lib/Settings';
 
 export class OnAgentAssignedHandler {
@@ -24,8 +26,11 @@ export class OnAgentAssignedHandler {
         const { id: rid, type, servedBy, isOpen, customFields = {}, visitor: { livechatData, token: visitorToken  } } = livechatRoom;
         const { welcomeEventSent = false } = customFields;
 
-        const sendWelcomeEvent = await getAppSettingValue(this.read, AppSetting.DialogflowWelcomeIntentOnStart);
-        const sendWelcomeMessage = await getAppSettingValue(this.read, AppSetting.DialogflowEnableWelcomeMessage);
+        const agentConfig = await getLivechatAgentCredentials(this.read, rid);
+        assignPersistentAgentConfigToRoom(this.read, this.persis, rid, agentConfig);
+
+        const sendWelcomeEvent = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowWelcomeIntentOnStart);
+        const sendWelcomeMessage = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowEnableWelcomeMessage);
 
         if (!type || type !== RoomType.LIVE_CHAT) {
             return;
@@ -35,8 +40,7 @@ export class OnAgentAssignedHandler {
             return;
         }
 
-        const dialogflowBotList = JSON.parse(await getAppSettingValue(this.read, AppSetting.DialogflowBotList));
-        if (!servedBy || !dialogflowBotList[servedBy.username]) {
+        if (!servedBy || !agentConfigExists(this.read, servedBy.username)) {
             return;
         }
 
@@ -50,7 +54,7 @@ export class OnAgentAssignedHandler {
                 disableInputMessage: 'Starting chat...',
                 displayTyping: true,
             };
-            const welcomeMessage: string = await getAppSettingValue(this.read, AppSetting.DialogflowWelcomeMessage);
+            const welcomeMessage: string = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowWelcomeMessage);
             await createMessage(rid, this.read, this.modify,
                 {
                     text: welcomeMessage || DefaultMessage.DEFAULT_DialogflowWelcomeMessage,

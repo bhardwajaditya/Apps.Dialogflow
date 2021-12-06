@@ -7,7 +7,7 @@ import { JobName } from '../../enum/Scheduler';
 import { Dialogflow } from '../../lib/Dialogflow';
 import { getRoomAssoc, retrieveDataByAssociation } from '../../lib/Persistence';
 import { cancelAllSessionMaintenanceJobForSession } from '../../lib/Scheduler';
-import { getLivechatAgentCredentials } from '../../lib/Settings';
+import { getAppSettingValue } from '../../lib/Settings';
 import { SessionMaintenanceOnceSchedule } from './SessionMaintenanceOnceSchedule';
 
 export class SessionMaintenanceProcessor implements IProcessor {
@@ -21,17 +21,16 @@ export class SessionMaintenanceProcessor implements IProcessor {
         console.log('-----------------------------------JOB----------------------------');
         console.log(jobContext);
 
-        const sessionId = jobContext.sessionId;
-        const livechatRoom = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
+        const livechatRoom = await read.getRoomReader().getById(jobContext.sessionId) as ILivechatRoom;
         const { isOpen } = livechatRoom;
 
         if (!isOpen) {
-            await cancelAllSessionMaintenanceJobForSession(modify, sessionId);
+            await cancelAllSessionMaintenanceJobForSession(modify, jobContext.sessionId);
             return;
         }
 
-        const sessionMaintenanceInterval: string = await getLivechatAgentCredentials(read, sessionId, AppSetting.DialogflowSessionMaintenanceInterval);
-        const sessionMaintenanceEventName: string = await getLivechatAgentCredentials(read, sessionId, AppSetting.DialogflowSessionMaintenanceEventName);
+        const sessionMaintenanceInterval: string = await getAppSettingValue(read, AppSetting.DialogflowSessionMaintenanceInterval);
+        const sessionMaintenanceEventName: string = await getAppSettingValue(read, AppSetting.DialogflowSessionMaintenanceEventName);
 
         if (!sessionMaintenanceEventName || !sessionMaintenanceInterval) {
             console.log('Session Maintenance Settings not configured');
@@ -40,20 +39,20 @@ export class SessionMaintenanceProcessor implements IProcessor {
 
         const data = await retrieveDataByAssociation(read, getRoomAssoc(jobContext.sessionId));
 
-        const defaultLanguageCode = await getLivechatAgentCredentials(read, sessionId, 'agent_default_language');
+        const defaultLanguageCode = await Dialogflow.getLivechatAgentCredentials(read, jobContext.rid, 'agent_default_language');
 
         try {
             const eventData = {
                 name: sessionMaintenanceEventName,
                 languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
             };
-            await Dialogflow.sendRequest(http, read, modify, sessionId, eventData, DialogflowRequestType.EVENT);
+            await Dialogflow.sendRequest(http, read, modify, jobContext.sessionId, eventData, DialogflowRequestType.EVENT);
         } catch (error) {
             // console.log(error);
         }
 
         await modify.getScheduler().scheduleOnce(new SessionMaintenanceOnceSchedule(JobName.SESSION_MAINTENANCE, sessionMaintenanceInterval, {
-            sessionId,
+            sessionId: jobContext.sessionId,
             jobName: JobName.SESSION_MAINTENANCE,
         }));
 

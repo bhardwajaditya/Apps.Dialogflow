@@ -18,6 +18,5 @@
         "IPostLivechatAgentUnassigned",
         "IPostLivechatRoomClosed",
         "IUIKitLivechatInteractionHandler"
-    ],
-    "commitHash": "10677db664589b7bc9bc244f9aa186c5923cb2ae"
+    ]
 }

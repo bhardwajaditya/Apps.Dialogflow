@@ -15,7 +15,6 @@ import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
-import { agentConfigExists, getLivechatAgentCredentials } from '../lib/Settings';
 import { getAppSettingValue } from '../lib/Settings';
 import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
 import { handleTimeout } from '../lib/Timeout';
@@ -29,13 +28,13 @@ export class PostMessageSentHandler {
                 private readonly modify: IModify) { }
 
     public async run() {
-
         const { text, editedAt, room, token, sender, customFields } = this.message;
         const livechatRoom = room as ILivechatRoom;
 
         const { id: rid, type, servedBy, isOpen, customFields: roomCustomFields } = livechatRoom;
 
-        if (!servedBy || !agentConfigExists(this.read, servedBy.username)) {
+        const dialogflowBotList = JSON.parse(await getAppSettingValue(this.read, AppSetting.DialogflowBotList));
+        if (!servedBy || !dialogflowBotList[servedBy.username]) {
             return;
         }
 
@@ -99,10 +98,10 @@ export class PostMessageSentHandler {
             this.app.getLogger().error(errorContent);
             console.error(errorContent);
 
-            const serviceUnavailable: string = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowServiceUnavailableMessage);
+            const serviceUnavailable: string = await getAppSettingValue(this.read, AppSetting.DialogflowServiceUnavailableMessage);
             await createMessage(rid, this.read, this.modify, { text: serviceUnavailable }, this.app);
 
-            const targetDepartment: string = await getLivechatAgentCredentials(this.read, rid, AppSetting.FallbackTargetDepartment);
+            const targetDepartment: string = await getAppSettingValue(this.read, AppSetting.FallbackTargetDepartment);
             if (!targetDepartment) {
                 console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
                 return;
@@ -152,14 +151,14 @@ export class PostMessageSentHandler {
     }
 
     private async handleClosedByVisitor(rid: string, read: IRead) {
-        const DialogflowEnableChatClosedByVisitorEvent = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowEnableChatClosedByVisitorEvent);
-        const DialogflowChatClosedByVisitorEventName = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowEnableChatClosedByVisitorEvent);
+        const DialogflowEnableChatClosedByVisitorEvent: boolean = await getAppSettingValue(this.read, AppSetting.DialogflowEnableChatClosedByVisitorEvent);
+        const DialogflowChatClosedByVisitorEventName: string = await getAppSettingValue(this.read, AppSetting.DialogflowChatClosedByVisitorEventName);
         await this.removeBotTypingListener(read, rid);
 
         const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
         if (DialogflowEnableChatClosedByVisitorEvent) {
             try {
-                const defaultLanguageCode = LanguageCode[await getLivechatAgentCredentials(read, rid, AppSetting.DialogflowAgentDefaultLanguage)];
+                const defaultLanguageCode = LanguageCode[await Dialogflow.getLivechatAgentCredentials(read, rid, 'agent_default_language')];
 
                 let res: IDialogflowMessage;
                 res = (await Dialogflow.sendRequest(this.http, this.read, this.modify,  rid, {

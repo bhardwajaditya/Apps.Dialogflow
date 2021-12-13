@@ -14,7 +14,7 @@ import { handleResponse } from '../lib/payloadAction';
 import { getIsProcessingMessage, getRoomAssoc, retrieveDataByAssociation, setIsProcessingMessage } from '../lib/Persistence';
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
-import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
+import { cancelAllEventSchedulerJobForSession, cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
 import { sendEventToDialogFlow } from '../lib/sendEventToDialogFlow';
 import { getAppSettingValue } from '../lib/Settings';
 import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
@@ -105,6 +105,7 @@ export class PostMessageSentHandler {
 
         try {
             await setIsProcessingMessage(this.persistence, rid, true);
+            await cancelAllEventSchedulerJobForSession(this.modify, rid);
             await botTypingListener(this.modify, rid, DialogflowBotUsername);
             response = (await Dialogflow.sendRequest(this.http, this.read, this.modify, rid, messageText, DialogflowRequestType.MESSAGE));
             await setIsProcessingMessage(this.persistence, rid, false);

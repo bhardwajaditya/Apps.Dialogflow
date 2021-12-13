@@ -29,7 +29,7 @@ export const updateRoomCustomFields = async (rid: string, data: any, read: IRead
     roomBuilder.setCustomFields(customFields);
 
     try {
-        modify.getUpdater().finish(roomBuilder);
+        await modify.getUpdater().finish(roomBuilder);
     } catch (error) {
         console.error(error);
     }

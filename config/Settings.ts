@@ -1,6 +1,4 @@
 import { ISetting, SettingType } from '@rocket.chat/apps-engine/definition/settings';
-import { LanguageCode } from '../enum/Dialogflow';
-import { IDFSetting } from './ISetting';
 
 export enum AppSetting {
     DialogflowBotList = 'agents',
@@ -48,12 +46,12 @@ export enum DefaultMessage {
     DEFAULT_DialogflowCustomerTimeoutWarningMessage = 'Are you still there? Please send a message within %t or this chat will time out.',
 }
 
-export const settings: Array<IDFSetting> = [
+export const settings: Array<ISetting> = [
 
     {
         id: AppSetting.DialogflowBotList,
         public: true,
-        type: 'multiCode',
+        type: SettingType.MULTICODE,
         packageValue: JSON.stringify(
             [{
                 omnichannel_agent: {

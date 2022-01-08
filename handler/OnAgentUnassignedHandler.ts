@@ -6,7 +6,7 @@ import { Logs } from '../enum/Logs';
 import { removeBotTypingListener } from '../lib//BotTyping';
 import { createMessage } from '../lib/Message';
 import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
-import { agentConfigExists, getLivechatAgentCredentials } from '../lib/Settings';
+import { agentConfigExists, getLivechatAgentConfig } from '../lib/Settings';
 
 export class OnAgentUnassignedHandler {
     constructor(private readonly app: IApp,
@@ -28,7 +28,7 @@ export class OnAgentUnassignedHandler {
         await removeBotTypingListener(this.modify, rid, livechatRoom.servedBy.username);
 
         if (await agentConfigExists(this.read, livechatRoom.servedBy.username) && allowChatBotSession === false) {
-                const offlineMessage: string = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowServiceUnavailableMessage);
+                const offlineMessage: string = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowServiceUnavailableMessage);
 
                 await createMessage(livechatRoom.id, this.read, this.modify, { text: offlineMessage }, this.app);
                 await closeChat(this.modify, this.read, rid);
@@ -46,7 +46,7 @@ export const closeChat = async (modify: IModify, read: IRead, rid: string) => {
     const DialogflowBotUsername = room.servedBy.username;
     await removeBotTypingListener(modify, rid, DialogflowBotUsername);
 
-    const closeChatMessage = await getLivechatAgentCredentials(read, rid, AppSetting.DialogflowCloseChatMessage);
+    const closeChatMessage = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowCloseChatMessage);
 
     const result = await modify.getUpdater().getLivechatUpdater()
                                 .closeRoom(room, closeChatMessage ? closeChatMessage : DefaultMessage.DEFAULT_DialogflowCloseChatMessage);

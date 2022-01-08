@@ -5,7 +5,7 @@ import { DialogflowRequestType, IDialogflowMessage, LanguageCode } from '../enum
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage } from './Message';
 import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
-import { getLivechatAgentCredentials } from './Settings';
+import { getLivechatAgentConfig } from './Settings';
 
 export class EventScheduler implements IProcessor {
     public id: string;
@@ -18,7 +18,7 @@ export class EventScheduler implements IProcessor {
 
         const data = await retrieveDataByAssociation(read, getRoomAssoc(jobContext.rid));
 
-        const defaultLanguageCode = await getLivechatAgentCredentials(read, jobContext.rid, AppSetting.DialogflowAgentDefaultLanguage);
+        const defaultLanguageCode = await getLivechatAgentConfig(read, jobContext.rid, AppSetting.DialogflowAgentDefaultLanguage);
 
         const event = { name: jobContext.eventName, languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN, parameters: {} };
         const response = await Dialogflow.sendRequest(http, read, modify, jobContext.rid, event, DialogflowRequestType.EVENT);

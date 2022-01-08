@@ -11,7 +11,7 @@ import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room'
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
-import { getLivechatAgentCredentials } from './Settings';
+import { getLivechatAgentConfig } from './Settings';
 
 export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IModify, http: IHttp, persistence: IPersistence, rid: string, visitorToken: string, dialogflowMessage: IDialogflowMessage) => {
     const { messages = [] } = dialogflowMessage;
@@ -19,7 +19,7 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
         const { action = null } = message as IDialogflowPayload;
         if (action) {
             const { name: actionName, params } = action as IDialogflowAction;
-            const targetDepartment: string = await getLivechatAgentCredentials(read, rid, AppSetting.FallbackTargetDepartment);
+            const targetDepartment: string = await getLivechatAgentConfig(read, rid, AppSetting.FallbackTargetDepartment);
             if (actionName) {
                 if (actionName === ActionIds.PERFORM_HANDOVER) {
                     if (!targetDepartment) {
@@ -59,7 +59,7 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                     try {
                         await modify.getScheduler().scheduleOnce(task);
                     } catch (error) {
-                        const serviceUnavailable: string = await getLivechatAgentCredentials(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
+                        const serviceUnavailable: string = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
                         await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
                         return;
                     }
@@ -92,7 +92,7 @@ const sendChangeLanguageEvent = async (app: IApp, read: IRead, modify: IModify, 
         await createDialogflowMessage(rid, read, modify, response, app);
       } catch (error) {
 
-        const serviceUnavailable: string = await getLivechatAgentCredentials(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
+        const serviceUnavailable: string = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
         await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
         return;
     }

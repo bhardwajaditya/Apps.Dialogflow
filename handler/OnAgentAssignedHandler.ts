@@ -8,7 +8,7 @@ import { createMessage } from '../lib/Message';
 import { assignPersistentAgentConfigToRoom } from '../lib/Persistence';
 import { updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
-import { agentConfigExists, getLivechatAgentCredentials } from '../lib/Settings';
+import { agentConfigExists, getLivechatAgentConfig } from '../lib/Settings';
 import { getAppSettingValue } from '../lib/Settings';
 
 export class OnAgentAssignedHandler {
@@ -26,11 +26,11 @@ export class OnAgentAssignedHandler {
         const { id: rid, type, servedBy, isOpen, customFields = {}, visitor: { livechatData, token: visitorToken  } } = livechatRoom;
         const { welcomeEventSent = false } = customFields;
 
-        const agentConfig = await getLivechatAgentCredentials(this.read, rid);
+        const agentConfig = await getLivechatAgentConfig(this.read, rid);
         assignPersistentAgentConfigToRoom(this.read, this.persis, rid, agentConfig);
 
-        const sendWelcomeEvent = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowWelcomeIntentOnStart);
-        const sendWelcomeMessage = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowEnableWelcomeMessage);
+        const sendWelcomeEvent = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowWelcomeIntentOnStart);
+        const sendWelcomeMessage = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowEnableWelcomeMessage);
 
         if (!type || type !== RoomType.LIVE_CHAT) {
             return;
@@ -54,7 +54,7 @@ export class OnAgentAssignedHandler {
                 disableInputMessage: 'Starting chat...',
                 displayTyping: true,
             };
-            const welcomeMessage: string = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowWelcomeMessage);
+            const welcomeMessage: string = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowWelcomeMessage);
             await createMessage(rid, this.read, this.modify,
                 {
                     text: welcomeMessage || DefaultMessage.DEFAULT_DialogflowWelcomeMessage,

@@ -7,7 +7,7 @@ import { JobName } from '../enum/Scheduler';
 import { removeBotTypingListener } from '../lib/BotTyping';
 import { createMessage } from './Message';
 import { SessionMaintenanceOnceSchedule } from './sessionMaintenance/SessionMaintenanceOnceSchedule';
-import { getLivechatAgentCredentials } from './Settings';
+import { getLivechatAgentConfig } from './Settings';
 
 export const updateRoomCustomFields = async (rid: string, data: any, read: IRead,  modify: IModify): Promise<any> => {
     if (!rid) {
@@ -45,7 +45,7 @@ export const closeChat = async (modify: IModify, read: IRead, rid: string, persi
     const DialogflowBotUsername = room.servedBy.username;
     await removeBotTypingListener(modify, rid, DialogflowBotUsername);
 
-    const closeChatMessage = await getLivechatAgentCredentials(read, rid, AppSetting.DialogflowCloseChatMessage);
+    const closeChatMessage = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowCloseChatMessage);
 
     const result = await modify.getUpdater().getLivechatUpdater()
                                 .closeRoom(room, closeChatMessage ? closeChatMessage : DefaultMessage.DEFAULT_DialogflowCloseChatMessage);
@@ -72,7 +72,7 @@ export const performHandover = async (app: IApp, modify: IModify, read: IRead, r
     };
 
     const handleHandoverFailure = async (error?: string) => {
-        const offlineMessage: string = await getLivechatAgentCredentials(read, rid, AppSetting.DialogflowHandoverFailedMessage);
+        const offlineMessage: string = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowHandoverFailedMessage);
         const handoverFailure = {
             error: error || offlineMessage,
             errorMessage: 'Unable to reach Liveagent bot, it may be offline or disabled.',
@@ -107,7 +107,7 @@ export const performHandover = async (app: IApp, modify: IModify, read: IRead, r
         return false;
     }
 
-    const handoverMessage: string = await getLivechatAgentCredentials(read, rid, AppSetting.DialogflowHandoverMessage);
+    const handoverMessage: string = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowHandoverMessage);
 
     // Use handoverMessage if set
     if (handoverMessage) {
@@ -132,7 +132,7 @@ export const performHandover = async (app: IApp, modify: IModify, read: IRead, r
     await updateRoomCustomFields(rid, {isHandedOverFromDialogFlow: true}, read, modify);
 
     // Viasat : Start maintaining session after handover
-    const sessionMaintenanceInterval: string = await getLivechatAgentCredentials(read, rid, AppSetting.DialogflowSessionMaintenanceInterval);
+    const sessionMaintenanceInterval: string = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowSessionMaintenanceInterval);
 
     if (!sessionMaintenanceInterval) {
         console.log('Session Maintenance Settings not configured');

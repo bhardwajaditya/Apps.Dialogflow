@@ -8,7 +8,7 @@ import { AppSetting, DefaultMessage } from '../config/Settings';
 import { ActionIds } from '../enum/ActionIds';
 import { createLivechatMessage, createMessage, deleteAllActionBlocks } from '../lib/Message';
 import { closeChat, performHandover } from '../lib/Room';
-import { getLivechatAgentCredentials } from '../lib/Settings';
+import { getLivechatAgentConfig } from '../lib/Settings';
 
 export class ExecuteLivechatBlockActionHandler {
     constructor(private readonly app: IApp,
@@ -41,7 +41,7 @@ export class ExecuteLivechatBlockActionHandler {
 
             switch (actionId) {
                 case ActionIds.PERFORM_HANDOVER:
-                    const targetDepartment: string = value || await getLivechatAgentCredentials(this.read, rid, AppSetting.FallbackTargetDepartment);
+                    const targetDepartment: string = value || await getLivechatAgentConfig(this.read, rid, AppSetting.FallbackTargetDepartment);
                     if (!targetDepartment) {
                         await createMessage(rid, this.read, this.modify, { text: DefaultMessage.DEFAULT_DialogflowRequestFailedMessage }, this.app);
                         break;
@@ -58,7 +58,7 @@ export class ExecuteLivechatBlockActionHandler {
                     break;
             }
 
-            const hideQuickRepliesSetting = await getLivechatAgentCredentials(this.read, rid, AppSetting.DialogflowHideQuickReplies);
+            const hideQuickRepliesSetting = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowHideQuickReplies);
             if (hideQuickRepliesSetting) {
                 await deleteAllActionBlocks(this.modify, appUser, id);
             }

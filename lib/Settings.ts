@@ -11,7 +11,7 @@ export const getServerSettingValue = async (read: IRead, id: string) => {
     return id && (await read.getEnvironmentReader().getServerSettings().getValueById(id));
 };
 
-export const getLivechatAgentCredentials = async (read: IRead, sessionId: string, type?: string) => {
+export const getLivechatAgentConfig = async (read: IRead, sessionId: string, type?: string) => {
 
     try {
         const persistentAgentConfig = await getPersistentAgentConfigToRoom(read, sessionId);

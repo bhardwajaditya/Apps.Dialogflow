@@ -1,6 +1,6 @@
 import { IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { RocketChatAssociationModel, RocketChatAssociationRecord } from '@rocket.chat/apps-engine/definition/metadata';
-import { getLivechatAgentCredentials } from './Settings';
+import { getLivechatAgentConfig } from './Settings';
 
 export const getRoomAssoc = (rid: string) => new RocketChatAssociationRecord(RocketChatAssociationModel.MISC, `DF-RID-${rid}`);
 

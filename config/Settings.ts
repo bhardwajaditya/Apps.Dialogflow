@@ -46,44 +46,46 @@ export enum DefaultMessage {
     DEFAULT_DialogflowCustomerTimeoutWarningMessage = 'Are you still there? Please send a message within %t or this chat will time out.',
 }
 
+const agentConfigTemplate = JSON.stringify(
+    [{
+        omnichannel_agent: {
+            project_id: '',
+            client_email: '',
+            agent_id: '',
+            agent_region: '',
+            agent_default_language: 'EN',
+            environment_id: '',
+            private_key: '',
+            agent_version: '',
+            fallback_responses_limit: 3,
+            fallback_target_department: 'Viasat Customer Support',
+            handover_message: 'Connecting you with a live agent',
+            no_agents_for_handover_message: '',
+            // tslint:disable-next-line: max-line-length
+            service_unavailable_message: 'There are no agents currently available. Our Customer Care team is available by phone 24/7 at 1-855-463-9333.',
+            close_chat_message: 'Thanks for contacting Viasat Customer Care. We appreciate your business. Please close this window to end your chat session.',
+            hide_quickreplies: true,
+            enable_chat_closed_by_visitor_event: true,
+            chat_closed_by_visitor_event: 'end_live_chat',
+            enable_welcome_message: true,
+            welcome_message: 'Hi there! I am a virtual assistant, designed to answer questions about your service.',
+            welcome_intent_on_start: true,
+            enable_customer_timeout: false,
+            customer_timeout_time: 240,
+            customer_timeout_warning_time: 180,
+            customer_timeout_warning_message: 'Are you still there? Please send a message within %t or this chat will time out.',
+            session_maintenance_interval: '5 minutes',
+            session_maintenance_event_name: 'session_maintenance',
+        },
+    }], null, '\t');
+
 export const settings: Array<ISetting> = [
 
     {
         id: AppSetting.DialogflowBotList,
         public: true,
         type: SettingType.MULTICODE,
-        packageValue: JSON.stringify(
-            [{
-                omnichannel_agent: {
-                    project_id: '',
-                    client_email: '',
-                    agent_id: '',
-                    agent_region: '',
-                    agent_default_language: 'EN',
-                    environment_id: '',
-                    private_key: '',
-                    agent_version: '',
-                    fallback_responses_limit: 3,
-                    fallback_target_department: 'Viasat Customer Support',
-                    handover_message: 'Connecting you with a live agent',
-                    no_agents_for_handover_message: '',
-                    // tslint:disable-next-line: max-line-length
-                    service_unavailable_message: 'There are no agents currently available. Our Customer Care team is available by phone 24/7 at 1-855-463-9333.',
-                    close_chat_message: 'Thanks for contacting Viasat Customer Care. We appreciate your business. Please close this window to end your chat session.',
-                    hide_quickreplies: true,
-                    enable_chat_closed_by_visitor_event: true,
-                    chat_closed_by_visitor_event: 'end_live_chat',
-                    enable_welcome_message: true,
-                    welcome_message: 'Hi there! I am a virtual assistant, designed to answer questions about your service.',
-                    welcome_intent_on_start: true,
-                    enable_customer_timeout: false,
-                    customer_timeout_time: 240,
-                    customer_timeout_warning_time: 180,
-                    customer_timeout_warning_message: 'Are you still there? Please send a message within %t or this chat will time out.',
-                    session_maintenance_interval: '5 minutes',
-                    session_maintenance_event_name: 'session_maintenance',
-                },
-            }], null, '\t'),
+        packageValue: agentConfigTemplate,
         i18nLabel: 'dialogflow_bot_list_config',
         i18nDescription: 'dialogflow_bot_list_config_description',
         required: true,

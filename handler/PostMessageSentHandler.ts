@@ -35,7 +35,13 @@ export class PostMessageSentHandler {
 
         const { id: rid, type, servedBy, isOpen, customFields: roomCustomFields } = livechatRoom;
 
-        if (!servedBy || !agentConfigExists(this.read, servedBy.username)) {
+        if (!servedBy) {
+            return;
+        }
+
+        const agentExists = await(agentConfigExists(this.read, servedBy.username));
+
+        if (!agentExists) {
             return;
         }
 

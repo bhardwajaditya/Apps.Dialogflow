@@ -1,12 +1,12 @@
 {
     "devDependencies": {
-        "@rocket.chat/apps-engine": "git+https://github.com/WideChat/Rocket.Chat.Apps-engine.git#master",
+        "@rocket.chat/apps-engine": "git+https://github.com/WideChat/Rocket.Chat.Apps-engine.git#multicode_setting_type",
         "@types/node": "10.17.5",
-        "prettier": "^2.0.5",
+        "prettier": "^2.5.1",
         "tslint": "^5.20.1",
         "typescript": "^2.9.1"
     },
     "scripts": {
-		"tslint": "tslint --project ."
-	}
+        "tslint": "tslint --project ."
+    }
 }

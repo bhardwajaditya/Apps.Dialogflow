@@ -114,13 +114,4 @@ export const settings: Array<ISetting> = [
         i18nDescription: 'dialogflow_log_level_description',
         required: false,
     },
-    {
-        id: AppSetting.DialogflowDisableComposerOnTriggerEvent,
-        public: true,
-        type: SettingType.BOOLEAN,
-        packageValue: false,
-        i18nLabel: 'dialogflow_disable_composer_on_trigger_event',
-        i18nDescription: 'dialogflow_disable_composer_on_trigger_event_description',
-        required: true,
-    },
 ];

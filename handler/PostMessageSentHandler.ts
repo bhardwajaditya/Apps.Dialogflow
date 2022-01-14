@@ -159,7 +159,7 @@ export class PostMessageSentHandler {
 
     private async handleClosedByVisitor(rid: string, read: IRead) {
         const DialogflowEnableChatClosedByVisitorEvent = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowEnableChatClosedByVisitorEvent);
-        const DialogflowChatClosedByVisitorEventName = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowEnableChatClosedByVisitorEvent);
+        const DialogflowChatClosedByVisitorEventName = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowChatClosedByVisitorEventName);
         await this.removeBotTypingListener(read, rid);
 
         const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));

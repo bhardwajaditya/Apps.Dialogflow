@@ -32,7 +32,7 @@ export class OnAgentAssignedHandler {
         const sendWelcomeEvent = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowWelcomeIntentOnStart);
         const sendWelcomeMessage = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowEnableWelcomeMessage);
 
-        const disableComposerOnTriggerEvent = await getLivechatAgentConfig(this.read, AppSetting.DialogflowDisableComposerOnTriggerEvent);
+        const disableComposerOnTriggerEvent = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowDisableComposerOnTriggerEvent);
 
         if (!type || type !== RoomType.LIVE_CHAT) {
             return;

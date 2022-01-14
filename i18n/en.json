@@ -53,5 +53,7 @@
     "dialogflow_session_maintenance_event_name":"Session Maintenance Event Name",
     "dialogflow_session_maintenance_event_name_description":"The bot will trigger this dialogflow event for session maintenance",
     "dialogflow_log_level":"DialogFlow App Log Level",
-    "dialogflow_log_level_description":"Redeploying app or restarting server is required to apply changes"
+    "dialogflow_log_level_description":"Redeploying app or restarting server is required to apply changes",
+    "dialogflow_disable_composer_on_trigger_event":"Disable composer for trigger event",
+    "dialogflow_disable_composer_on_trigger_event_description": "Composer disable while the widget waits for welcome event. True for ES and False for CX."
 }

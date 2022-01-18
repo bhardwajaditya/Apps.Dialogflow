@@ -9,6 +9,7 @@ export const createHttpRequest = (headers, data) => {
         data: {
             ...data,
         },
+        timeout: 35 * 1000,
     };
 };
 

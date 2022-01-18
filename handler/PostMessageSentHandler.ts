@@ -10,7 +10,7 @@ import { botTypingListener, removeBotTypingListener } from '../lib//BotTyping';
 import { Dialogflow } from '../lib/Dialogflow';
 import { getErrorMessage } from '../lib/Helper';
 import { createDialogflowMessage, createMessage, removeQuotedMessage } from '../lib/Message';
-import { handlePayloadActions } from '../lib/payloadAction';
+import { handleResponse } from '../lib/payloadAction';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
@@ -79,7 +79,7 @@ export class PostMessageSentHandler {
             }
         }
 
-        if (!text || editedAt) {
+        if (!servedBy || servedBy.username !== DialogflowBotUsername) {
             return;
         }
 
@@ -90,17 +90,23 @@ export class PostMessageSentHandler {
         if (file && sender.username === visitorUsername) {
             const fileAttachmentEventName: string = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowFileAttachmentEventName);
             await sendEventToDialogFlow(this.app, this.read, this.modify, this.persistence, this.http, rid, fileAttachmentEventName);
+
+        if (!text || editedAt) {
             return;
         }
 
-        let messageText = text;
-        messageText = await removeQuotedMessage(this.read, room, messageText);
+        if (!text || (text && text.trim().length === 0)) {
+            return;
+        }
 
         await handleTimeout(this.app, this.message, this.read, this.http, this.persistence, this.modify);
 
         if (sender.username === servedBy.username) {
             return;
         }
+
+        let messageText = text;
+        messageText = await removeQuotedMessage(this.read, room, messageText);
 
         let response: IDialogflowMessage;
 
@@ -136,8 +142,9 @@ export class PostMessageSentHandler {
             return incFallbackIntentAndSendResponse(this.app, this.read, this.modify, rid, createResponseMessage);
         }
 
-        await createResponseMessage();
-        await handlePayloadActions(this.app, this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
+        // await createResponseMessage();
+        // await handlePayloadActions(this.app, this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
+        await handleResponse(this.app, this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
         await handleParameters(this.app, this.read, this.modify, this.persistence, this.http, rid, visitorToken, response);
         await this.handleBotTyping(rid, response);
 

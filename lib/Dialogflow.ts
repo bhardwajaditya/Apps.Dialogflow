@@ -177,21 +177,12 @@ class DialogflowClass {
                     msgCustomFields.disableInput = !!customFields.disableInput;
                     msgCustomFields.disableInputMessage = customFields.disableInputMessage;
                     msgCustomFields.displayTyping = customFields.displayTyping;
+                    messages.push({ customFields: msgCustomFields });
                 }
                 if (action) {
                     messages.push({action});
                 }
             });
-
-            if (Object.keys(msgCustomFields).length > 0) {
-                if (messages.length > 0) {
-                    let lastObj = messages[messages.length - 1];
-                    lastObj = Object.assign(lastObj, { customFields: msgCustomFields });
-                    messages[messages.length - 1] = lastObj;
-                } else {
-                    messages.push({ customFields: msgCustomFields });
-                }
-            }
 
             if (messages.length > 0) {
                 parsedMessage.messages = messages;
@@ -241,10 +232,26 @@ class DialogflowClass {
             let intentConcatText = '';
             let pageConcatText = '';
 
+            let previousMessageType = 'text';
+            let currentMessageType = 'text';
+
             if (responseMessages) {
                 responseMessages.forEach((message) => {
                     const { text, payload: { quickReplies = null, customFields = null, action = null, isFallback = false } = {} } = message;
+
+                    if (!text && previousMessageType === 'text') {
+                        if (intentConcatText !== '') {
+                            messages.push({ text: intentConcatText });
+                        }
+                        if (pageConcatText !== '') {
+                            messages.push({ text: pageConcatText });
+                        }
+                        intentConcatText = '';
+                        pageConcatText = '';
+                    }
+
                     if (text) {
+                        currentMessageType = 'text';
                         const { text: textMessageArray } = text;
 
                         const sourceType = this.getSourceType(text, diagnosticInfo);
@@ -262,27 +269,33 @@ class DialogflowClass {
                         }
                     }
                     if (quickReplies) {
+                        currentMessageType = 'quickReplies';
                         const { options, imagecards } = quickReplies;
                         if (options || imagecards) {
                             messages.push(quickReplies);
                         }
                     }
                     if (customFields) {
+                        currentMessageType = 'customFields';
                         msgCustomFields.disableInput = !!customFields.disableInput;
                         msgCustomFields.disableInputMessage = customFields.disableInputMessage;
                         msgCustomFields.displayTyping = customFields.displayTyping;
+                        messages.push({ customFields: msgCustomFields });
                     }
 
                     if (customFields && customFields.mediaCardURL) {
+                        currentMessageType = 'mediaCardURL';
                         const { mediaCardURL } = customFields;
                         messages.push({ customFields: { mediaCardURL } });
                     }
                     if (action) {
+                        currentMessageType = 'action';
                         messages.push({action});
                     }
                     if (isFallback) {
                         parsedMessage.isFallback = isFallback;
                     }
+                    previousMessageType = currentMessageType;
                 });
 
                 if (intentConcatText !== '') {
@@ -290,24 +303,6 @@ class DialogflowClass {
                 }
                 if (pageConcatText !== '') {
                     messages.push({ text: pageConcatText });
-                }
-            }
-
-            if (Object.keys(msgCustomFields).length > 0) {
-
-                for (let i = messages.length - 1; i >= 0; i--) {
-                    if (messages[i].hasOwnProperty('text')) {
-                        let lastObj = messages[i];
-                        lastObj = Object.assign(lastObj, { customFields: msgCustomFields });
-                        messages[i] = lastObj;
-                        break;
-                    }
-                    if (i === 0) {
-                        messages.push({ customFields: msgCustomFields });
-                    }
-                }
-                if (messages.length === 0) {
-                    messages.push({ customFields: msgCustomFields });
                 }
             }
 

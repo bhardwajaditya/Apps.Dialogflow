@@ -1,9 +1,10 @@
 {
     "bot_username": "Bot Username",
-    "agent_version": "Agent Version",
     "dialogflow_bot_id": "Bot Id",
     "dialogflow_bot_id_description": "Select the bot to use from the list of bots. Use comma to seperate values in respective fields",
     "dialogflow_project_id": "Project Id",
+    "dialogflow_bot_list_config": "Dialogflow Agent Configuration List",
+    "dialogflow_bot_list_config_description": "An object containing the Omnichannel bots and the configurations necessary to reach the corresponsind DF agent endpont",
     "dialogflow_client_email": "Client Email",
     "dialogflow_cx_agent_id": "[CX ONLY] Dialogflow Agent ID",
     "dialogflow_cx_agent_id_desc": "1. Go to the Dialogflow CX console. \n 2. Select the project. \n 3. From the agent list find the right agent and click `⋮` . \n 4. Select copy name. \n 5. The agent name has the following format: \n 6. `projects/PROJECT_ID/locations/REGION_ID/agents/AGENT_ID`. \n 7. Copy `AGENT_ID` and paste it here.",
@@ -56,5 +57,7 @@
     "dialogflow_file_attachment_event_name":"File Attachmnet Event Name",
     "dialogflow_file_attachment_event_name_description":"The bot will trigger this dialogflow event when user sends any file.",
     "dialogflow_log_level":"DialogFlow App Log Level",
-    "dialogflow_log_level_description":"Redeploying app or restarting server is required to apply changes"
+    "dialogflow_log_level_description":"Redeploying app or restarting server is required to apply changes",
+    "dialogflow_disable_composer_on_trigger_event":"Disable composer for trigger event",
+    "dialogflow_disable_composer_on_trigger_event_description": "Composer disable while the widget waits for welcome event. True for ES and False for CX."
 }

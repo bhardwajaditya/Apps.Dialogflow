@@ -79,10 +79,6 @@ export class PostMessageSentHandler {
             }
         }
 
-        if (!servedBy || servedBy.username !== DialogflowBotUsername) {
-            return;
-        }
-
         if (!text || (text && text.trim().length === 0)) {
             return;
         }
@@ -90,6 +86,7 @@ export class PostMessageSentHandler {
         if (file && sender.username === visitorUsername) {
             const fileAttachmentEventName: string = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowFileAttachmentEventName);
             await sendEventToDialogFlow(this.app, this.read, this.modify, this.persistence, this.http, rid, fileAttachmentEventName);
+        }
 
         if (!text || editedAt) {
             return;

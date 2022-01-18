@@ -31,6 +31,7 @@ export enum AppSetting {
     DialogflowLogLevel = 'log_level',
     DialogflowCXFallbackEvents = 'dialogflow_cx_fallback_events',
     DialogflowDisableComposerOnTriggerEvent = 'dialogflow_disable_composer_on_trigger_event',
+    DialogflowFileAttachmentEventName = 'dialogflow_file_attachment_event_name',
 }
 
 export enum ServerSetting {

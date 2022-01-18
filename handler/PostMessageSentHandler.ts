@@ -15,6 +15,7 @@ import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
+import { sendEventToDialogFlow } from '../lib/sentEventToDialogFlow';
 import { agentConfigExists, getLivechatAgentConfig } from '../lib/Settings';
 import { getAppSettingValue } from '../lib/Settings';
 import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
@@ -30,10 +31,11 @@ export class PostMessageSentHandler {
 
     public async run() {
 
-        const { text, editedAt, room, token, sender, customFields } = this.message;
+        const { text, editedAt, room, token, sender, customFields, file } = this.message;
         const livechatRoom = room as ILivechatRoom;
 
-        const { id: rid, type, servedBy, isOpen, customFields: roomCustomFields } = livechatRoom;
+        const { id: rid, type, servedBy, isOpen, customFields: roomCustomFields,
+            visitor: { token: visitorToken, username: visitorUsername }} = livechatRoom;
 
         if (!servedBy) {
             return;
@@ -85,6 +87,12 @@ export class PostMessageSentHandler {
             return;
         }
 
+        if (file && sender.username === visitorUsername) {
+            const fileAttachmentEventName: string = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowFileAttachmentEventName);
+            await sendEventToDialogFlow(this.app, this.read, this.modify, this.persistence, this.http, rid, fileAttachmentEventName);
+            return;
+        }
+
         let messageText = text;
         messageText = await removeQuotedMessage(this.read, room, messageText);
 
@@ -95,7 +103,6 @@ export class PostMessageSentHandler {
         }
 
         let response: IDialogflowMessage;
-        const { visitor: { token: visitorToken } } = room as ILivechatRoom;
 
         try {
             await botTypingListener(this.modify, rid, servedBy.username);

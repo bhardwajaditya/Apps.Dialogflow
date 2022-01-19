@@ -9,24 +9,15 @@ import { createDialogflowMessage, createMessage } from './Message';
 import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
 import { getLivechatAgentConfig } from './Settings';
 
-export const WELCOME_EVENT_NAME =  'Welcome';
-
-export const sendWelcomeEventToDialogFlow = async (app: IApp, read: IRead,  modify: IModify, persistence: IPersistence, http: IHttp, rid: string, visitorToken: string, livechatData: any) => {
+export const sendEventToDialogFlow = async (app: IApp, read: IRead,  modify: IModify, persistence: IPersistence, http: IHttp, rid: string, eventName: string, parameters: any = {}) => {
     try {
         const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
         const defaultLanguageCode = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowAgentDefaultLanguage);
         const event = {
-            name: WELCOME_EVENT_NAME,
+            name: eventName,
             languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
-            parameters: {...(livechatData || {}), roomId: rid, visitorToken} || {},
+            parameters: parameters || {},
         };
-        const disableInput: IDialogflowCustomFields = {
-            disableInput: true,
-            disableInputMessage: 'Starting chat...',
-            displayTyping: true,
-        };
-
-        await createMessage(rid, read, modify, { customFields: disableInput }, app);
         const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, rid, event, DialogflowRequestType.EVENT);
         await createDialogflowMessage(rid, read, modify, response, app);
     } catch (error) {

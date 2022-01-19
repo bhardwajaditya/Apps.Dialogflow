@@ -1,14 +1,14 @@
-import { IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
+import { IModify, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { AppSetting } from '../config/Settings';
 import { Logs } from '../enum/Logs';
 import { createMessage } from '../lib/Message';
 import { performHandover, updateRoomCustomFields } from './Room';
-import { getAppSettingValue } from './Settings';
+import { getLivechatAgentConfig } from './Settings';
 
 export const incFallbackIntentAndSendResponse = async (app: IApp, read: IRead, modify: IModify, sessionId: string, dialogflowMessage?: () => any) => {
-    const fallbackThreshold = (await getAppSettingValue(read, AppSetting.DialogflowFallbackResponsesLimit)) as number;
+    const fallbackThreshold = (await getLivechatAgentConfig(read, sessionId, AppSetting.DialogflowFallbackResponsesLimit)) as number;
 
     if (!fallbackThreshold || (fallbackThreshold && fallbackThreshold === 0)) { return; }
 
@@ -21,11 +21,11 @@ export const incFallbackIntentAndSendResponse = async (app: IApp, read: IRead, m
     await updateRoomCustomFields(sessionId, { fallbackCount: newFallbackCount }, read, modify);
 
     if (newFallbackCount === fallbackThreshold) {
-        const targetDepartmentName: string | undefined = await getAppSettingValue(read, AppSetting.FallbackTargetDepartment);
+        const targetDepartmentName: string | undefined = await getLivechatAgentConfig(read, sessionId, AppSetting.FallbackTargetDepartment);
 
         if (!targetDepartmentName) {
             console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
-            const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
+            const serviceUnavailable: string = await getLivechatAgentConfig(read, sessionId, AppSetting.DialogflowServiceUnavailableMessage);
             return await createMessage(sessionId, read, modify, { text: serviceUnavailable }, app);
         }
 

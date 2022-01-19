@@ -9,9 +9,9 @@ import { JobName } from '../enum/Scheduler';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
-import { getAppSettingValue } from '../lib/Settings';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
+import { getLivechatAgentConfig } from './Settings';
 
 export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IModify, http: IHttp, persistence: IPersistence, rid: string, visitorToken: string, dialogflowMessage: IDialogflowMessage) => {
     const { messages = [] } = dialogflowMessage;
@@ -19,7 +19,7 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
         const { action = null } = message as IDialogflowPayload;
         if (action) {
             const { name: actionName, params } = action as IDialogflowAction;
-            const targetDepartment: string = await getAppSettingValue(read, AppSetting.FallbackTargetDepartment);
+            const targetDepartment: string = await getLivechatAgentConfig(read, rid, AppSetting.FallbackTargetDepartment);
             if (actionName) {
                 if (actionName === ActionIds.PERFORM_HANDOVER) {
                     if (!targetDepartment) {
@@ -42,7 +42,10 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                     }
                     await performHandover(app, modify, read, rid, visitorToken, targetDepartment);
                 } else if (actionName === ActionIds.CLOSE_CHAT) {
-                    await closeChat(modify, read, rid);
+                    const room = await read.getRoomReader().getById(rid) as ILivechatRoom;
+                    if (room && room.isOpen) {
+                        await closeChat(modify, read, rid);
+                    }
                 } else if (actionName === ActionIds.NEW_WELCOME_EVENT) {
                     const livechatRoom = await read.getRoomReader().getById(rid) as ILivechatRoom;
                     if (!livechatRoom) { throw new Error(); }
@@ -64,7 +67,7 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                     try {
                         await modify.getScheduler().scheduleOnce(task);
                     } catch (error) {
-                        const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
+                        const serviceUnavailable: string = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
                         await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
                         return;
                     }
@@ -97,7 +100,7 @@ const sendChangeLanguageEvent = async (app: IApp, read: IRead, modify: IModify, 
         await createDialogflowMessage(rid, read, modify, response, app);
       } catch (error) {
 
-        const serviceUnavailable: string = await getAppSettingValue(read, AppSetting.DialogflowServiceUnavailableMessage);
+        const serviceUnavailable: string = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
         await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
         return;
     }

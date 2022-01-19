@@ -4,12 +4,12 @@ import { ILivechatRoom, IVisitor } from '@rocket.chat/apps-engine/definition/liv
 import { IRoom } from '@rocket.chat/apps-engine/definition/rooms';
 import { BlockElementType, BlockType, ButtonStyle, IActionsBlock, IBlock, IButtonElement, IImageBlock, ITextObject, TextObjectType } from '@rocket.chat/apps-engine/definition/uikit';
 import { IUser } from '@rocket.chat/apps-engine/definition/users';
-import { AppSetting, ServerSetting } from '../config/Settings';
+import { ServerSetting } from '../config/Settings';
 import { ActionIds } from '../enum/ActionIds';
 import { IDialogflowMessage, IDialogflowQuickReplies, IDialogflowQuickReplyOptions } from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
 import { escapeRegExp, uuid } from './Helper';
-import { getAppSettingValue, getServerSettingValue } from './Settings';
+import { getServerSettingValue } from './Settings';
 
 export const createDialogflowMessage = async (rid: string, read: IRead,  modify: IModify, dialogflowMessage: IDialogflowMessage, app?: IApp ): Promise<any> => {
     const { messages = [] } = dialogflowMessage;
@@ -116,9 +116,20 @@ export const createMessage = async (rid: string, read: IRead,  modify: IModify, 
         return;
     }
 
-    const botUserName = await getAppSettingValue(read, AppSetting.DialogflowBotUsername);
-    const sender = await read.getUserReader().getByUsername(botUserName);
     const room = await read.getRoomReader().getById(rid) as ILivechatRoom;
+
+    if (!room) {
+        if (app) { app.getLogger().error(`${Logs.INVALID_ROOM_ID} ${rid}`); }
+        return;
+    }
+
+    if (!room.servedBy) {
+        if (app) { app.getLogger().error(Logs.EMPTY_BOT_USERNAME_SETTING); }
+        return;
+    }
+
+    const botUserName = room.servedBy.username;
+    const sender = await read.getUserReader().getByUsername(botUserName);
 
     if (!botUserName) {
         if (app) { app.getLogger().error(Logs.EMPTY_BOT_USERNAME_SETTING); }
@@ -127,11 +138,6 @@ export const createMessage = async (rid: string, read: IRead,  modify: IModify, 
 
     if (!sender) {
         if (app) { app.getLogger().error(Logs.INVALID_BOT_USERNAME_SETTING); }
-        return;
-    }
-
-    if (!room) {
-        if (app) { app.getLogger().error(`${Logs.INVALID_ROOM_ID} ${rid}`); }
         return;
     }
 
@@ -180,15 +186,19 @@ export const createLivechatMessage = async (app: IApp, rid: string, read: IRead,
         return;
     }
 
-    const botUserName = await getAppSettingValue(read, AppSetting.DialogflowBotUsername);
-    if (!botUserName) {
-        app.getLogger().error(Logs.EMPTY_BOT_USERNAME_SETTING);
+    const room = await read.getRoomReader().getById(rid) as ILivechatRoom;
+    if (!room) {
+        app.getLogger().error(`${ Logs.INVALID_ROOM_ID } ${ rid }`);
         return;
     }
 
-    const room = await read.getRoomReader().getById(rid);
-    if (!room) {
-        app.getLogger().error(`${ Logs.INVALID_ROOM_ID } ${ rid }`);
+    if (!room.servedBy) {
+        return;
+    }
+
+    const botUserName = room.servedBy.username;
+    if (!botUserName) {
+        app.getLogger().error(Logs.EMPTY_BOT_USERNAME_SETTING);
         return;
     }
 

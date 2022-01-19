@@ -10,7 +10,7 @@ import { base64urlEncode, getError } from './Helper';
 import { createHttpRequest } from './Http';
 import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
 import { updateRoomCustomFields } from './Room';
-import { getAppSettingValue } from './Settings';
+import { getAppSettingValue, getLivechatAgentConfig } from './Settings';
 
 class DialogflowClass {
     private jwtExpiration: Date;
@@ -20,7 +20,6 @@ class DialogflowClass {
                              sessionId: string,
                              request: IDialogflowEvent | string,
                              requestType: DialogflowRequestType): Promise<any> {
-        const dialogFlowVersion = await getAppSettingValue(read, AppSetting.DialogflowVersion);
 
         const room = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
         const { id: rid, visitor: { livechatData, token: visitorToken  } } = room;
@@ -29,7 +28,8 @@ class DialogflowClass {
 
         const data = await retrieveDataByAssociation(read, getRoomAssoc(sessionId));
 
-        const defaultLanguageCode = await getAppSettingValue(read, AppSetting.DialogflowDefaultLanguage);
+        const defaultLanguageCode = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowAgentDefaultLanguage);
+        const dialogFlowVersion = await getLivechatAgentConfig(read, sessionId, AppSetting.DialogflowAgentVersion);
 
         if (dialogFlowVersion === 'CX') {
 
@@ -177,12 +177,21 @@ class DialogflowClass {
                     msgCustomFields.disableInput = !!customFields.disableInput;
                     msgCustomFields.disableInputMessage = customFields.disableInputMessage;
                     msgCustomFields.displayTyping = customFields.displayTyping;
-                    messages.push({ customFields: msgCustomFields });
                 }
                 if (action) {
                     messages.push({action});
                 }
             });
+
+            if (Object.keys(msgCustomFields).length > 0) {
+                if (messages.length > 0) {
+                    let lastObj = messages[messages.length - 1];
+                    lastObj = Object.assign(lastObj, { customFields: msgCustomFields });
+                    messages[messages.length - 1] = lastObj;
+                } else {
+                    messages.push({ customFields: msgCustomFields });
+                }
+            }
 
             if (messages.length > 0) {
                 parsedMessage.messages = messages;
@@ -232,26 +241,10 @@ class DialogflowClass {
             let intentConcatText = '';
             let pageConcatText = '';
 
-            let previousMessageType = 'text';
-            let currentMessageType = 'text';
-
             if (responseMessages) {
                 responseMessages.forEach((message) => {
                     const { text, payload: { quickReplies = null, customFields = null, action = null, isFallback = false } = {} } = message;
-
-                    if (!text && previousMessageType === 'text') {
-                        if (intentConcatText !== '') {
-                            messages.push({ text: intentConcatText });
-                        }
-                        if (pageConcatText !== '') {
-                            messages.push({ text: pageConcatText });
-                        }
-                        intentConcatText = '';
-                        pageConcatText = '';
-                    }
-
                     if (text) {
-                        currentMessageType = 'text';
                         const { text: textMessageArray } = text;
 
                         const sourceType = this.getSourceType(text, diagnosticInfo);
@@ -269,33 +262,27 @@ class DialogflowClass {
                         }
                     }
                     if (quickReplies) {
-                        currentMessageType = 'quickReplies';
                         const { options, imagecards } = quickReplies;
                         if (options || imagecards) {
                             messages.push(quickReplies);
                         }
                     }
                     if (customFields) {
-                        currentMessageType = 'customFields';
                         msgCustomFields.disableInput = !!customFields.disableInput;
                         msgCustomFields.disableInputMessage = customFields.disableInputMessage;
                         msgCustomFields.displayTyping = customFields.displayTyping;
-                        messages.push({ customFields: msgCustomFields });
                     }
 
                     if (customFields && customFields.mediaCardURL) {
-                        currentMessageType = 'mediaCardURL';
                         const { mediaCardURL } = customFields;
                         messages.push({ customFields: { mediaCardURL } });
                     }
                     if (action) {
-                        currentMessageType = 'action';
                         messages.push({action});
                     }
                     if (isFallback) {
                         parsedMessage.isFallback = isFallback;
                     }
-                    previousMessageType = currentMessageType;
                 });
 
                 if (intentConcatText !== '') {
@@ -303,6 +290,24 @@ class DialogflowClass {
                 }
                 if (pageConcatText !== '') {
                     messages.push({ text: pageConcatText });
+                }
+            }
+
+            if (Object.keys(msgCustomFields).length > 0) {
+
+                for (let i = messages.length - 1; i >= 0; i--) {
+                    if (messages[i].hasOwnProperty('text')) {
+                        let lastObj = messages[i];
+                        lastObj = Object.assign(lastObj, { customFields: msgCustomFields });
+                        messages[i] = lastObj;
+                        break;
+                    }
+                    if (i === 0) {
+                        messages.push({ customFields: msgCustomFields });
+                    }
+                }
+                if (messages.length === 0) {
+                    messages.push({ customFields: msgCustomFields });
                 }
             }
 
@@ -333,34 +338,27 @@ class DialogflowClass {
     }
 
     private async getServerURL(read: IRead, modify: IModify, http: IHttp, sessionId: string) {
-        const botId = await getAppSettingValue(read, AppSetting.DialogflowBotId);
-        const projectIds = (await getAppSettingValue(read, AppSetting.DialogflowProjectId)).split(',');
-        const projectId = projectIds.length >= botId ? projectIds[botId - 1] : projectIds[0];
-        const environments = (await getAppSettingValue(read, AppSetting.DialogflowEnvironment)).split(',');
-        const environment = environments.length >= botId ? environments[botId - 1] : environments[0];
-        const dialogFlowVersion = await getAppSettingValue(read, AppSetting.DialogflowVersion);
+        const projectId = await getLivechatAgentConfig(read, sessionId, AppSetting.DialogflowAgentProjectId);
+        const environmentId = await getLivechatAgentConfig(read, sessionId, AppSetting.DialogflowAgentEnvironmentId);
+        const dialogFlowVersion = await getLivechatAgentConfig(read, sessionId, AppSetting.DialogflowAgentVersion);
 
         if (dialogFlowVersion === 'CX') {
 
-            const regionId = await getAppSettingValue(read, AppSetting.DialogflowRegion);
-            const environmentId = await getAppSettingValue(read, AppSetting.DialogflowEnvironmentId);
-            const agentId = await getAppSettingValue(read, AppSetting.DialogflowAgentId);
+            const regionId = await getLivechatAgentConfig(read, sessionId, AppSetting.DialogflowAgentRegion);
+            const agentId = await getLivechatAgentConfig(read, sessionId, AppSetting.DialogflowAgentId);
 
             return `https://${regionId}-dialogflow.googleapis.com/v3/projects/${projectId}/locations/${regionId}/agents/${agentId}/environments/${environmentId || 'draft'}/sessions/${sessionId}:detectIntent`;
         }
 
         const accessToken = await this.getAccessToken(read, modify, http, sessionId);
         if (!accessToken) { throw Error(Logs.ACCESS_TOKEN_ERROR); }
-        return `https://dialogflow.googleapis.com/v2/projects/${projectId}/agent/environments/${environment || 'draft'}/users/-/sessions/${sessionId}:detectIntent?access_token=${accessToken}`;
+        return `https://dialogflow.googleapis.com/v2/projects/${projectId}/agent/environments/${environmentId || 'draft'}/users/-/sessions/${sessionId}:detectIntent?access_token=${accessToken}`;
     }
 
     private async getAccessToken(read: IRead, modify: IModify, http: IHttp, sessionId: string) {
 
-        const botId = await getAppSettingValue(read, AppSetting.DialogflowBotId);
-        const clientEmails = (await getAppSettingValue(read, AppSetting.DialogflowClientEmail)).split(',');
-        const privateKeys = (await getAppSettingValue(read, AppSetting.DialogFlowPrivateKey)).split(',');
-        const privateKey = privateKeys.length >= botId ? privateKeys[botId - 1] : privateKeys[0];
-        const clientEmail = clientEmails.length >= botId ? clientEmails[botId - 1] : clientEmails[0];
+        const privateKey = await getLivechatAgentConfig(read, sessionId, AppSetting.DialogflowAgentPrivateKey);
+        const clientEmail = await getLivechatAgentConfig(read, sessionId, AppSetting.DialogflowAgentClientEmail);
 
         if (!privateKey || !clientEmail) { throw new Error(Logs.EMPTY_CLIENT_EMAIL_OR_PRIVATE_KEY_SETTING); }
 

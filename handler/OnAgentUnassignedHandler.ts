@@ -1,13 +1,12 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatEventContext, ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
-import { IRoom } from '@rocket.chat/apps-engine/definition/rooms';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { Logs } from '../enum/Logs';
 import { removeBotTypingListener } from '../lib//BotTyping';
 import { createMessage } from '../lib/Message';
 import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
-import { getAppSettingValue } from '../lib/Settings';
+import { agentConfigExists, getLivechatAgentConfig } from '../lib/Settings';
 
 export class OnAgentUnassignedHandler {
     constructor(private readonly app: IApp,
@@ -19,20 +18,19 @@ export class OnAgentUnassignedHandler {
 
     public async run() {
         const livechatRoom: ILivechatRoom = this.context.room as ILivechatRoom;
-        const DialogflowBotUsername: string = await getAppSettingValue(this.read, AppSetting.DialogflowBotUsername);
         const { isChatBotFunctional: allowChatBotSession } = this.context.room.customFields as any;
         const {id: rid} = livechatRoom;
-
-        await removeBotTypingListener(this.modify, rid, DialogflowBotUsername);
 
         if (!livechatRoom.servedBy) {
             return;
         }
-        if (livechatRoom.servedBy.username === DialogflowBotUsername && allowChatBotSession === false) {
-                const offlineMessage: string = await getAppSettingValue(this.read, AppSetting.DialogflowServiceUnavailableMessage);
+
+        await removeBotTypingListener(this.modify, rid, livechatRoom.servedBy.username);
+
+        if (await agentConfigExists(this.read, livechatRoom.servedBy.username) && allowChatBotSession === false) {
+                const offlineMessage: string = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowServiceUnavailableMessage);
 
                 await createMessage(livechatRoom.id, this.read, this.modify, { text: offlineMessage }, this.app);
-
                 await closeChat(this.modify, this.read, rid);
             }
 
@@ -42,13 +40,13 @@ export class OnAgentUnassignedHandler {
 
 export const closeChat = async (modify: IModify, read: IRead, rid: string) => {
     await cancelAllSessionMaintenanceJobForSession(modify, rid);
-    const room: IRoom = (await read.getRoomReader().getById(rid)) as IRoom;
+    const room = (await read.getRoomReader().getById(rid)) as any;
     if (!room) { throw new Error(Logs.INVALID_ROOM_ID); }
 
-    const DialogflowBotUsername: string = await getAppSettingValue(read, AppSetting.DialogflowBotUsername);
+    const DialogflowBotUsername = room.servedBy.username;
     await removeBotTypingListener(modify, rid, DialogflowBotUsername);
 
-    const closeChatMessage = await getAppSettingValue(read, AppSetting.DialogflowCloseChatMessage);
+    const closeChatMessage = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowCloseChatMessage);
 
     const result = await modify.getUpdater().getLivechatUpdater()
                                 .closeRoom(room, closeChatMessage ? closeChatMessage : DefaultMessage.DEFAULT_DialogflowCloseChatMessage);

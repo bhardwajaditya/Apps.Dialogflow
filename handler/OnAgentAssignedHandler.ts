@@ -5,8 +5,10 @@ import { RoomType } from '@rocket.chat/apps-engine/definition/rooms';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { IDialogflowCustomFields } from '../enum/Dialogflow';
 import { createMessage } from '../lib/Message';
+import { assignPersistentAgentConfigToRoom } from '../lib/Persistence';
 import { updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
+import { agentConfigExists, getLivechatAgentConfig } from '../lib/Settings';
 import { getAppSettingValue } from '../lib/Settings';
 
 export class OnAgentAssignedHandler {
@@ -24,19 +26,33 @@ export class OnAgentAssignedHandler {
         const { id: rid, type, servedBy, isOpen, customFields = {}, visitor: { livechatData, token: visitorToken  } } = livechatRoom;
         const { welcomeEventSent = false } = customFields;
 
-        const DialogflowBotUsername: string = await getAppSettingValue(this.read, AppSetting.DialogflowBotUsername);
-        const sendWelcomeEvent = await getAppSettingValue(this.read, AppSetting.DialogflowWelcomeIntentOnStart);
-        const sendWelcomeMessage = await getAppSettingValue(this.read, AppSetting.DialogflowEnableWelcomeMessage);
+        const agentConfig = await getLivechatAgentConfig(this.read, rid);
+        assignPersistentAgentConfigToRoom(this.read, this.persis, rid, agentConfig);
+
+        const sendWelcomeEvent = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowWelcomeIntentOnStart);
+        const sendWelcomeMessage = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowEnableWelcomeMessage);
+
+        const disableComposerOnTriggerEvent = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowDisableComposerOnTriggerEvent);
 
         if (!type || type !== RoomType.LIVE_CHAT) {
             return;
+        }
+
+        if (!disableComposerOnTriggerEvent) {
+            const enableInput: IDialogflowCustomFields = {
+                disableInput: false,
+            };
+            await createMessage(rid, this.read, this.modify,
+                {
+                    customFields: enableInput,
+                }, this.app);
         }
 
         if (!isOpen || !sendWelcomeEvent) {
             return;
         }
 
-        if (!servedBy || servedBy.username !== DialogflowBotUsername) {
+        if (!servedBy || !agentConfigExists(this.read, servedBy.username)) {
             return;
         }
 
@@ -50,7 +66,7 @@ export class OnAgentAssignedHandler {
                 disableInputMessage: 'Starting chat...',
                 displayTyping: true,
             };
-            const welcomeMessage: string = await getAppSettingValue(this.read, AppSetting.DialogflowWelcomeMessage);
+            const welcomeMessage: string = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowWelcomeMessage);
             await createMessage(rid, this.read, this.modify,
                 {
                     text: welcomeMessage || DefaultMessage.DEFAULT_DialogflowWelcomeMessage,

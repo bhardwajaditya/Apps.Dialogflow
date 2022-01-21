@@ -9,7 +9,6 @@ import { assignPersistentAgentConfigToRoom } from '../lib/Persistence';
 import { updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
 import { agentConfigExists, getLivechatAgentConfig } from '../lib/Settings';
-import { getAppSettingValue } from '../lib/Settings';
 
 export class OnAgentAssignedHandler {
     constructor(private readonly app: IApp,

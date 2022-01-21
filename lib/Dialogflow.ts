@@ -10,7 +10,7 @@ import { base64urlEncode, getError } from './Helper';
 import { createHttpRequest } from './Http';
 import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
 import { updateRoomCustomFields } from './Room';
-import { getAppSettingValue, getLivechatAgentConfig } from './Settings';
+import { getLivechatAgentConfig } from './Settings';
 
 class DialogflowClass {
     private jwtExpiration: Date;

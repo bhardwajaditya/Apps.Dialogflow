@@ -7,7 +7,7 @@ import { getError } from '../lib/Helper';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
 import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
-import { getAppSettingValue, getLivechatAgentConfig } from './Settings';
+import { getLivechatAgentConfig } from './Settings';
 
 export const sendEventToDialogFlow = async (app: IApp, read: IRead,  modify: IModify, persistence: IPersistence, http: IHttp, rid: string, eventName: string, parameters: any = {}) => {
     try {

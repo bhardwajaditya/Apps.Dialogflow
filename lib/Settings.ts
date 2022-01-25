@@ -14,7 +14,6 @@ export const getServerSettingValue = async (read: IRead, id: string) => {
 export const getLivechatAgentConfig = async (read: IRead, sessionId: string, type?: string) => {
 
     try {
-        console.log(type);
         const persistentAgentConfig = await getPersistentAgentConfigToRoom(read, sessionId);
         if (persistentAgentConfig) {
             if (type) {

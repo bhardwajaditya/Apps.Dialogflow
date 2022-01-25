@@ -57,6 +57,8 @@ export class PostMessageSentHandler {
             if (roomCustomFields && roomCustomFields.isHandedOverFromDialogFlow === true) {
                 return;
             }
+            const closeChatMessage = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowCloseChatMessage);
+            await createMessage(rid, this.read, this.modify, { text: closeChatMessage }, this.app);
             await this.handleClosedByVisitor(rid, this.read);
             await closeChat(this.modify, this.read, rid, this.persistence);
             return;

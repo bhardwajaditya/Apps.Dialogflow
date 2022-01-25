@@ -3,7 +3,7 @@ import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { AppSetting } from '../config/Settings';
 import { ActionIds } from '../enum/ActionIds';
-import { DialogflowRequestType, IDialogflowAction, IDialogflowMessage, IDialogflowPayload, LanguageCode } from '../enum/Dialogflow';
+import {  DialogflowRequestType, IDialogflowAction, IDialogflowImageCard, IDialogflowMessage, IDialogflowPayload, IDialogflowQuickReplies, LanguageCode} from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
 import { JobName } from '../enum/Scheduler';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
@@ -42,7 +42,10 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                     }
                     await performHandover(app, modify, read, rid, visitorToken, targetDepartment);
                 } else if (actionName === ActionIds.CLOSE_CHAT) {
-                    await closeChat(modify, read, rid);
+                    const room = await read.getRoomReader().getById(rid) as ILivechatRoom;
+                    if (room && room.isOpen) {
+                        await closeChat(modify, read, rid);
+                    }
                 } else if (actionName === ActionIds.NEW_WELCOME_EVENT) {
                     const livechatRoom = await read.getRoomReader().getById(rid) as ILivechatRoom;
                     if (!livechatRoom) { throw new Error(); }
@@ -102,5 +105,23 @@ const logActionPayload = (rid: string, action: IDialogflowAction) => {
     const logData = {dialogflowSessionID: rid, action: JSON.parse(JSON.stringify(action))};
     if (logData.action.params) {
         logData.action.params.customDetail = '';
+    }
+};
+
+export const  handleResponse = async (app: IApp, read: IRead,  modify: IModify, http: IHttp, persistence: IPersistence, rid: string, visitorToken: string, dialogflowMessage: IDialogflowMessage) => {
+    const { messages = [], isFallback = false } = dialogflowMessage;
+    for (const message of messages) {
+        const { action = null } = message as IDialogflowPayload;
+        const textMessages: Array<string | IDialogflowQuickReplies | IDialogflowPayload |  IDialogflowImageCard> = [];
+        textMessages.push(message);
+        const messagesToProcess: IDialogflowMessage = {
+            messages: textMessages,
+            isFallback,
+        };
+        if (action) {
+            await handlePayloadActions(app, read, modify, http, persistence, rid, visitorToken, messagesToProcess);
+        } else {
+            await createDialogflowMessage(rid, read, modify, messagesToProcess, app);
+        }
     }
 };

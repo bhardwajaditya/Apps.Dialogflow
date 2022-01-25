@@ -10,11 +10,12 @@ import { botTypingListener, removeBotTypingListener } from '../lib//BotTyping';
 import { Dialogflow } from '../lib/Dialogflow';
 import { getErrorMessage } from '../lib/Helper';
 import { createDialogflowMessage, createMessage, removeQuotedMessage } from '../lib/Message';
-import { handlePayloadActions } from '../lib/payloadAction';
+import { handleResponse } from '../lib/payloadAction';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
+import { sendEventToDialogFlow } from '../lib/sentEventToDialogFlow';
 import { agentConfigExists, getLivechatAgentConfig } from '../lib/Settings';
 import { getAppSettingValue } from '../lib/Settings';
 import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
@@ -30,10 +31,11 @@ export class PostMessageSentHandler {
 
     public async run() {
 
-        const { text, editedAt, room, token, sender, customFields } = this.message;
+        const { text, editedAt, room, token, sender, customFields, file } = this.message;
         const livechatRoom = room as ILivechatRoom;
 
-        const { id: rid, type, servedBy, isOpen, customFields: roomCustomFields } = livechatRoom;
+        const { id: rid, type, servedBy, isOpen, customFields: roomCustomFields,
+            visitor: { token: visitorToken, username: visitorUsername }} = livechatRoom;
 
         if (!servedBy) {
             return;
@@ -79,6 +81,15 @@ export class PostMessageSentHandler {
             }
         }
 
+        if (!text || (text && text.trim().length === 0)) {
+            return;
+        }
+
+        if (file && sender.username === visitorUsername) {
+            const fileAttachmentEventName: string = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowFileAttachmentEventName);
+            await sendEventToDialogFlow(this.app, this.read, this.modify, this.persistence, this.http, rid, fileAttachmentEventName);
+        }
+
         if (!text || editedAt) {
             return;
         }
@@ -87,17 +98,16 @@ export class PostMessageSentHandler {
             return;
         }
 
-        let messageText = text;
-        messageText = await removeQuotedMessage(this.read, room, messageText);
-
         await handleTimeout(this.app, this.message, this.read, this.http, this.persistence, this.modify);
 
         if (sender.username === servedBy.username) {
             return;
         }
 
+        let messageText = text;
+        messageText = await removeQuotedMessage(this.read, room, messageText);
+
         let response: IDialogflowMessage;
-        const { visitor: { token: visitorToken } } = room as ILivechatRoom;
 
         try {
             await botTypingListener(this.modify, rid, servedBy.username);
@@ -131,8 +141,9 @@ export class PostMessageSentHandler {
             return incFallbackIntentAndSendResponse(this.app, this.read, this.modify, rid, createResponseMessage);
         }
 
-        await createResponseMessage();
-        await handlePayloadActions(this.app, this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
+        // await createResponseMessage();
+        // await handlePayloadActions(this.app, this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
+        await handleResponse(this.app, this.read, this.modify, this.http, this.persistence, rid, visitorToken, response);
         await handleParameters(this.app, this.read, this.modify, this.persistence, this.http, rid, visitorToken, response);
         await this.handleBotTyping(rid, response);
 
@@ -161,13 +172,13 @@ export class PostMessageSentHandler {
 
     private async handleClosedByVisitor(rid: string, read: IRead) {
         const DialogflowEnableChatClosedByVisitorEvent = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowEnableChatClosedByVisitorEvent);
-        const DialogflowChatClosedByVisitorEventName = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowEnableChatClosedByVisitorEvent);
+        const DialogflowChatClosedByVisitorEventName = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowChatClosedByVisitorEventName);
         await this.removeBotTypingListener(read, rid);
 
         const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
         if (DialogflowEnableChatClosedByVisitorEvent) {
             try {
-                const defaultLanguageCode = LanguageCode[await getLivechatAgentConfig(read, rid, AppSetting.DialogflowAgentDefaultLanguage)];
+                const defaultLanguageCode = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowAgentDefaultLanguage);
 
                 let res: IDialogflowMessage;
                 res = (await Dialogflow.sendRequest(this.http, this.read, this.modify,  rid, {

@@ -30,6 +30,8 @@ export enum AppSetting {
     DialogflowSessionMaintenanceEventName = 'session_maintenance_event_name',
     DialogflowLogLevel = 'log_level',
     DialogflowCXFallbackEvents = 'dialogflow_cx_fallback_events',
+    DialogflowDisableComposerOnTriggerEvent = 'dialogflow_disable_composer_on_trigger_event',
+    DialogflowFileAttachmentEventName = 'dialogflow_file_attachment_event_name',
 }
 
 export enum ServerSetting {
@@ -76,6 +78,7 @@ const agentConfigTemplate = JSON.stringify(
             customer_timeout_warning_message: 'Are you still there? Please send a message within %t or this chat will time out.',
             session_maintenance_interval: '5 minutes',
             session_maintenance_event_name: 'session_maintenance',
+            dialogflow_disable_composer_on_trigger_event: false,
         },
     }], null, '\t');
 

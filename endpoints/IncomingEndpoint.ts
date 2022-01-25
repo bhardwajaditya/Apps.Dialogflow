@@ -9,7 +9,8 @@ import { Dialogflow } from '../lib/Dialogflow';
 import { getError } from '../lib/Helper';
 import { createHttpResponse } from '../lib/Http';
 import { createDialogflowMessage } from '../lib/Message';
-import { handlePayloadActions } from '../lib/payloadAction';
+import { handleResponse } from '../lib/payloadAction';
+// import { handlePayloadActions } from '../lib/payloadAction';
 import { closeChat, performHandover } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow, WELCOME_EVENT_NAME } from '../lib/sendWelcomeEvent';
 
@@ -75,8 +76,10 @@ export class IncomingEndpoint extends ApiEndpoint {
 
                 try {
                     const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, sessionId, event, DialogflowRequestType.EVENT);
-                    await createDialogflowMessage(sessionId, read, modify, response, this.app);
-                    await handlePayloadActions(this.app, read, modify, http, persistence, sessionId, vToken, response);
+                    // widechat specific change
+                    // await createDialogflowMessage(sessionId, read, modify, response, this.app);
+                    // await handlePayloadActions(this.app, read, modify, http, persistence, sessionId, vToken, response);
+                    await handleResponse(this.app, read, modify, http, persistence, sessionId, vToken, response);
                 } catch (error) {
                     const errorContent = `${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${sessionId} } ${getError(error)}`;
                     this.app.getLogger().error(errorContent);

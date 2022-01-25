@@ -27,7 +27,7 @@ jobs:
     - name: Create Catchup PR
       uses: shubhsherl/create-catchup-pr@v0.1.0
       with:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        GITHUB_TOKEN: ${{secrets.PAT}}
         SOURCE_BRANCH: "master"
         SOURCE_REPO: "RocketChat"
         TARGET_BRANCH: "master"

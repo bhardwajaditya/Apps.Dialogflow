@@ -3,8 +3,10 @@ import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { IJobContext, IProcessor } from '@rocket.chat/apps-engine/definition/scheduler';
 import { AppSetting } from '../../config/Settings';
 import { DialogflowRequestType, LanguageCode } from '../../enum/Dialogflow';
+import { Logs } from '../../enum/Logs';
 import { JobName } from '../../enum/Scheduler';
 import { Dialogflow } from '../../lib/Dialogflow';
+import { getError } from '../../lib/Helper';
 import { getRoomAssoc, retrieveDataByAssociation } from '../../lib/Persistence';
 import { cancelAllSessionMaintenanceJobForSession } from '../../lib/Scheduler';
 import { getLivechatAgentConfig } from '../../lib/Settings';
@@ -49,7 +51,7 @@ export class SessionMaintenanceProcessor implements IProcessor {
             };
             await Dialogflow.sendRequest(http, read, modify, sessionId, eventData, DialogflowRequestType.EVENT);
         } catch (error) {
-            // console.log(error);
+            console.error(`${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${sessionId} } ${getError(error)}`);
         }
 
         await modify.getScheduler().scheduleOnce(new SessionMaintenanceOnceSchedule(JobName.SESSION_MAINTENANCE, sessionMaintenanceInterval, {

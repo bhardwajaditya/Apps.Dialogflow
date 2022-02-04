@@ -6,6 +6,7 @@ import { ActionIds } from '../enum/ActionIds';
 import {  DialogflowRequestType, IDialogflowAction, IDialogflowImageCard, IDialogflowMessage, IDialogflowPayload, IDialogflowQuickReplies, LanguageCode} from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
 import { JobName } from '../enum/Scheduler';
+import { getError } from '../lib/Helper';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
@@ -99,7 +100,7 @@ const sendChangeLanguageEvent = async (app: IApp, read: IRead, modify: IModify, 
 
         await createDialogflowMessage(rid, read, modify, response, app);
       } catch (error) {
-
+        console.error(`${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${rid} } ${getError(error)}`);
         const serviceUnavailable: string = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
         await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
         return;

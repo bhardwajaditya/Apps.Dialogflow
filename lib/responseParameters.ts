@@ -2,6 +2,8 @@ import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/de
 import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { AppSetting } from '../config/Settings';
 import {  DialogflowRequestType, IDialogflowMessage} from '../enum/Dialogflow';
+import { Logs } from '../enum/Logs';
+import { getError } from '../lib/Helper';
 import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
@@ -36,7 +38,7 @@ const sendChangeLanguageEvent = async (app: IApp, read: IRead, modify: IModify, 
 
         await createDialogflowMessage(rid, read, modify, response, app);
       } catch (error) {
-
+        console.error(`${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${rid} } ${getError(error)}`);
         const serviceUnavailable: string = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
 
         await createMessage(rid, read, modify, { text: serviceUnavailable }, app);

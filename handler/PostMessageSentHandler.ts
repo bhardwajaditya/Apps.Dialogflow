@@ -97,7 +97,7 @@ export class PostMessageSentHandler {
 
         await handleTimeout(this.app, this.message, this.read, this.http, this.persistence, this.modify);
 
-        if (sender.username === servedBy.username || sender.username !== visitorUsername) {
+        if (sender.username === servedBy.username || sender.username !== visitorUsername || await(agentConfigExists(this.read, sender.username)) {
             return;
         }
 

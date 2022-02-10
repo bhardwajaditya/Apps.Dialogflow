@@ -78,13 +78,14 @@ export class PostMessageSentHandler {
             }
         }
 
-        if (!text || (text && text.trim().length === 0)) {
-            return;
-        }
-
         if (file && sender.username === visitorUsername) {
             const fileAttachmentEventName: string = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowFileAttachmentEventName);
             await sendEventToDialogFlow(this.app, this.read, this.modify, this.persistence, this.http, rid, fileAttachmentEventName);
+            return;
+        }
+
+        if (!text || (text && text.trim().length === 0)) {
+            return;
         }
 
         if (!text || editedAt) {

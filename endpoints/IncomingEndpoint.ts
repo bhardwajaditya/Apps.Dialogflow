@@ -42,9 +42,12 @@ export class IncomingEndpoint extends ApiEndpoint {
     ): Promise<{ statusCode: HttpStatusCode, data?: { result?: string; error?: string } }> {
         const { action, sessionId } = endpointContent;
         if (!sessionId) { throw new Error(Logs.INVALID_SESSION_ID); }
+        const room = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
         switch (action) {
             case EndpointActionNames.CLOSE_CHAT:
-                await closeChat(modify, read, sessionId, persistence);
+                if (room && room.isOpen) {
+                    await closeChat(modify, read, sessionId, persistence);
+                }
                 break;
             case EndpointActionNames.HANDOVER:
                 const { actionData: { targetDepartment = '' } = {} } = endpointContent;
@@ -52,7 +55,6 @@ export class IncomingEndpoint extends ApiEndpoint {
                     console.error(Logs.EMPTY_HANDOVER_DEPARTMENT);
                     return { statusCode: HttpStatusCode.CONFLICT, data: { error: Logs.EMPTY_HANDOVER_DEPARTMENT }};
                 }
-                const room = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
                 if (!room || !room.isOpen) { throw new Error('Error! Invalid session Id. No active room found with the given session id'); }
                 const { visitor: { token: visitorToken } } = room;
                 const result = await performHandover(this.app, modify, read, sessionId, visitorToken, targetDepartment);

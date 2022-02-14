@@ -31,7 +31,9 @@ export class OnAgentUnassignedHandler {
                 const offlineMessage: string = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowServiceUnavailableMessage);
 
                 await createMessage(livechatRoom.id, this.read, this.modify, { text: offlineMessage }, this.app);
-                await closeChat(this.modify, this.read, rid);
+                if (livechatRoom.isOpen) {
+                    await closeChat(this.modify, this.read, rid);
+                }
             }
 
         return;

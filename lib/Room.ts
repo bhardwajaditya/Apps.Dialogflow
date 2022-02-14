@@ -87,7 +87,9 @@ export const performHandover = async (app: IApp, modify: IModify, read: IRead, r
             await createMessage(rid, read, modify, { text: offlineMessage }, app);
         }
         await removeBotTypingIndicator();
-        await closeChat(modify, read, rid);
+        if (room && room.isOpen) {
+            await closeChat(modify, read, rid);
+        }
     };
 
     // Fill livechatTransferData.targetDepartment param if required

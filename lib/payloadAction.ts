@@ -7,7 +7,7 @@ import {  DialogflowRequestType, IDialogflowAction, IDialogflowImageCard, IDialo
 import { Logs } from '../enum/Logs';
 import { JobName } from '../enum/Scheduler';
 import { getError } from '../lib/Helper';
-import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
+import { getRoomAssoc, retrieveDataByAssociation, setIsProcessingMessage } from '../lib/Persistence';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
 import { Dialogflow } from './Dialogflow';
@@ -67,7 +67,13 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
 
                     try {
                         await modify.getScheduler().scheduleOnce(task);
+
+                        // Start blackout window
+                        if (params.continue_blackout) {
+                            await setIsProcessingMessage(persistence, rid, true);
+                        }
                     } catch (error) {
+                        console.error(error);
                         const serviceUnavailable: string = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
                         await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
                         return;

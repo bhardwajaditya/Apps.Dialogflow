@@ -30,6 +30,8 @@ export class EventScheduler implements IProcessor {
             // Close blackout window after event is sent
             await setIsProcessingMessage(persistence, sessionId, false);
         } catch (error) {
+            // Failed to send event, so close blackout window
+            await setIsProcessingMessage(persistence, sessionId, false);
             console.error(`${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${sessionId} } ${getError(error)}`);
         }
 

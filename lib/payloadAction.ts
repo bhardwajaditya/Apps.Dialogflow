@@ -49,7 +49,7 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                     }
                 } else if (actionName === ActionIds.NEW_WELCOME_EVENT) {
                     const livechatRoom = await read.getRoomReader().getById(rid) as ILivechatRoom;
-                    if (!livechatRoom) { throw new Error(); }
+                    if (!livechatRoom) { throw new Error(Logs.INVALID_ROOM_ID); }
                     const { visitor: { livechatData } } = livechatRoom;
                     await sendWelcomeEventToDialogFlow(app, read, modify, persistence, http, rid, visitorToken, livechatData);
                 } else if (actionName === ActionIds.SET_TIMEOUT) {

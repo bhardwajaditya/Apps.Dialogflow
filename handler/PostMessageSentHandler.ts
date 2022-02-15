@@ -15,7 +15,7 @@ import { getIsProcessingMessage, getRoomAssoc, retrieveDataByAssociation, setIsP
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { cancelAllEventSchedulerJobForSession, cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
-import { sendEventToDialogFlow } from '../lib/sentEventToDialogFlow';
+import { sendEventToDialogFlow } from '../lib/sendEventToDialogFlow';
 import { agentConfigExists, getLivechatAgentConfig } from '../lib/Settings';
 import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
 import { handleTimeout } from '../lib/Timeout';

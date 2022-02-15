@@ -8,7 +8,7 @@ import { Global } from '../Global';
 import { getError } from '../lib/Helper';
 import { Dialogflow } from './Dialogflow';
 import { handleResponse } from './payloadAction';
-import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
+import { getRoomAssoc, retrieveDataByAssociation, setIsProcessingMessage } from './Persistence';
 import { getLivechatAgentConfig } from './Settings';
 
 export class EventScheduler implements IProcessor {
@@ -33,7 +33,12 @@ export class EventScheduler implements IProcessor {
             const { visitor: { token: visitorToken } } = livechatRoom;
 
             await handleResponse(Global.app, read, modify, http, persistence, sessionId, visitorToken, response);
+
+            // Close blackout window after event is sent
+            await setIsProcessingMessage(persistence, sessionId, false);
         } catch (error) {
+            // Failed to send event, so close blackout window
+            await setIsProcessingMessage(persistence, sessionId, false);
             console.error(`${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${sessionId} } ${getError(error)}`);
         }
 

@@ -2,6 +2,7 @@ export enum Logs {
     ENDPOINT_RECEIVED_REQUEST = 'Endpoint received a request',
     INVALID_SESSION_ID = 'Error! Session Id not valid',
     INVALID_ROOM_ID = 'Error! Room Id not valid',
+    ROOM_CLOSED = 'Error! Room is already closed',
     INVALID_REQUEST_CONTENT = 'Error! Request content not valid',
     INVALID_BOT_USERNAME_SETTING = 'The Bot User does not exist.',
     INVALID_VISITOR_TOKEN = 'Error: Visitor Token not valid',

@@ -45,9 +45,7 @@ export class IncomingEndpoint extends ApiEndpoint {
         const room = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
         switch (action) {
             case EndpointActionNames.CLOSE_CHAT:
-                if (room && room.isOpen) {
-                    await closeChat(modify, read, sessionId, persistence);
-                }
+                await closeChat(modify, read, sessionId, persistence);
                 break;
             case EndpointActionNames.HANDOVER:
                 const { actionData: { targetDepartment = '' } = {} } = endpointContent;

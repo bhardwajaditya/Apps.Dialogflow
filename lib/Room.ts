@@ -40,6 +40,10 @@ export const closeChat = async (modify: IModify, read: IRead, rid: string, persi
     const room: ILivechatRoom = (await read.getRoomReader().getById(rid)) as ILivechatRoom;
     if (!room) { throw new Error(Logs.INVALID_ROOM_ID); }
 
+    if (!room.isOpen) {
+        return;
+    }
+
     if (!room.servedBy) { throw new Error(Logs.EMPTY_BOT_USERNAME_SETTING); }
 
     const DialogflowBotUsername = room.servedBy.username;
@@ -87,9 +91,7 @@ export const performHandover = async (app: IApp, modify: IModify, read: IRead, r
             await createMessage(rid, read, modify, { text: offlineMessage }, app);
         }
         await removeBotTypingIndicator();
-        if (room && room.isOpen) {
-            await closeChat(modify, read, rid);
-        }
+        await closeChat(modify, read, rid);
     };
 
     // Fill livechatTransferData.targetDepartment param if required

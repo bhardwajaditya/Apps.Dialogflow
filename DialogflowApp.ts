@@ -2,6 +2,7 @@ import {
     IAppAccessors,
     IConfigurationExtend,
     IConfigurationModify,
+    IEnvironmentRead,
     IHttp,
     ILogger,
     IModify,
@@ -19,6 +20,7 @@ import { settings } from './config/Settings';
 import { FulfillmentsEndpoint } from './endpoints/FulfillmentsEndpoint';
 import { IncomingEndpoint } from './endpoints/IncomingEndpoint';
 import { JobName } from './enum/Scheduler';
+import { Global } from './Global';
 import { ExecuteLivechatBlockActionHandler } from './handler/ExecuteLivechatBlockActionHandler';
 import { LivechatRoomClosedHandler } from './handler/LivechatRoomClosedHandler';
 import { OnAgentAssignedHandler } from './handler/OnAgentAssignedHandler';
@@ -31,6 +33,11 @@ import { SessionMaintenanceProcessor } from './lib/sessionMaintenance/SessionMai
 export class DialogflowApp extends App implements IPostMessageSent, IPostLivechatAgentAssigned, IPostLivechatAgentUnassigned, IPostLivechatRoomClosed, IUIKitLivechatInteractionHandler {
     constructor(info: IAppInfo, logger: ILogger, accessors: IAppAccessors) {
         super(info, logger, accessors);
+    }
+
+    public async onEnable(environment: IEnvironmentRead, configurationModify: IConfigurationModify): Promise<boolean> {
+        Global.app = this;
+        return Promise.resolve(true);
     }
 
     public async executeLivechatBlockActionHandler(context: UIKitLivechatBlockInteractionContext,

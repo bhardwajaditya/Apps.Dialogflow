@@ -111,7 +111,7 @@ class DialogflowClass {
         try {
             const response = await http.post(authUrl, httpRequestContent);
 
-            if (!response.content) {
+            if (!response || !response.content) {
                 const errorContent = `${Logs.INVALID_RESPONSE_FROM_DIALOGFLOW}: { roomID: ${sessionId || 'N/A'} }`;
                 console.error(errorContent);
                 throw new Error(errorContent);

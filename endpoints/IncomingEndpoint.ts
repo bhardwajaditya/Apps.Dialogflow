@@ -65,7 +65,7 @@ export class IncomingEndpoint extends ApiEndpoint {
                 if (!event) { throw new Error(Logs.INVALID_EVENT_DATA); }
 
                 const livechatRoom = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
-                if (!livechatRoom) { throw new Error(); }
+                if (!livechatRoom) { throw new Error(Logs.INVALID_ROOM_ID); }
 
                 const { visitor: { token: vToken, livechatData } } = livechatRoom;
 

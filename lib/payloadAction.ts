@@ -43,7 +43,10 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                     }
                     await performHandover(app, modify, read, rid, visitorToken, targetDepartment);
                 } else if (actionName === ActionIds.CLOSE_CHAT) {
-                    await closeChat(modify, read, rid);
+                    const livechatRoom = await read.getRoomReader().getById(rid) as ILivechatRoom;
+                    if (livechatRoom && livechatRoom.isOpen) {
+                        await closeChat(modify, read, rid);
+                    }
                 } else if (actionName === ActionIds.NEW_WELCOME_EVENT) {
                     const livechatRoom = await read.getRoomReader().getById(rid) as ILivechatRoom;
                     if (!livechatRoom) { throw new Error(Logs.INVALID_ROOM_ID); }

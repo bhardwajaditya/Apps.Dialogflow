@@ -28,11 +28,13 @@ export class OnAgentUnassignedHandler {
         await removeBotTypingListener(this.modify, rid, livechatRoom.servedBy.username);
 
         if (await agentConfigExists(this.read, livechatRoom.servedBy.username) && allowChatBotSession === false) {
-                const offlineMessage: string = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowServiceUnavailableMessage);
+            const offlineMessage: string = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowServiceUnavailableMessage);
 
-                await createMessage(livechatRoom.id, this.read, this.modify, { text: offlineMessage }, this.app);
+            await createMessage(livechatRoom.id, this.read, this.modify, { text: offlineMessage }, this.app);
+            if (livechatRoom.isOpen) {
                 await closeChat(this.modify, this.read, rid);
             }
+        }
 
         return;
     }

@@ -41,7 +41,7 @@ export const closeChat = async (modify: IModify, read: IRead, rid: string, persi
     if (!room) { throw new Error(Logs.INVALID_ROOM_ID); }
 
     if (!room.isOpen) {
-        throw new Error(Logs.ROOM_CLOSED);
+        return;
     }
 
     if (!room.servedBy) { throw new Error(Logs.EMPTY_BOT_USERNAME_SETTING); }

@@ -32,10 +32,10 @@ export class EventScheduler implements IProcessor {
 
             const { visitor: { token: visitorToken } } = livechatRoom;
 
-            await handleResponse(Global.app, read, modify, http, persistence, sessionId, visitorToken, response);
-
             // Close blackout window after event is sent
             await setIsProcessingMessage(persistence, sessionId, false);
+
+            await handleResponse(Global.app, read, modify, http, persistence, sessionId, visitorToken, response);
         } catch (error) {
             // Failed to send event, so close blackout window
             await setIsProcessingMessage(persistence, sessionId, false);

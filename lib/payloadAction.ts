@@ -53,7 +53,7 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
 
                     const task = {
                         id: JobName.EVENT_SCHEDULER,
-                        when: `${Number(params.time)} seconds`,
+                        when: new Date(new Date().getTime() + Number(params.time) * 1000),
                         data: {
                             eventName: params.eventName ,
                             rid,

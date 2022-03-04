@@ -7,7 +7,7 @@ import {  DialogflowRequestType, IDialogflowAction, IDialogflowImageCard, IDialo
 import { Logs } from '../enum/Logs';
 import { JobName } from '../enum/Scheduler';
 import { getError } from '../lib/Helper';
-import { getRoomAssoc, retrieveDataByAssociation, setIsProcessingMessage } from '../lib/Persistence';
+import { getRoomAssoc, retrieveDataByAssociation, setIsProcessingMessage, updatePersistentData } from '../lib/Persistence';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
 import { Dialogflow } from './Dialogflow';
@@ -83,13 +83,8 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                     const assoc = getRoomAssoc(rid);
                     const data = await retrieveDataByAssociation(read, assoc);
 
-                    if (data && data.custom_languageCode) {
-                        if (data.custom_languageCode !== params.newLanguageCode) {
-                            await persistence.updateByAssociation(assoc, {custom_languageCode: params.newLanguageCode});
-                            sendChangeLanguageEvent(app, read, modify, persistence, rid, http, params.newLanguageCode);
-                        }
-                    } else {
-                        await persistence.createWithAssociation({custom_languageCode: params.newLanguageCode}, assoc);
+                    if (data.custom_languageCode !== params.newLanguageCode) {
+                        await updatePersistentData(read, persistence, assoc, {custom_languageCode: params.newLanguageCode});
                         sendChangeLanguageEvent(app, read, modify, persistence, rid, http, params.newLanguageCode);
                     }
                 }

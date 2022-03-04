@@ -37,20 +37,13 @@ export async function updatePersistentData(read: IRead, persistence: IPersistenc
 export async function assignPersistentAgentConfigToRoom(read: IRead, persistence: IPersistence, rid: string, agentConfig: object) {
     try {
         const assoc = getRoomAssoc(rid);
-        const persistentData = await retrieveDataByAssociation(read, assoc);
-        let { roomAgentData } = persistentData;
-        if ( !roomAgentData ) {
-            roomAgentData = { roomAgentConfigs: {} };
-            roomAgentData.roomAgentConfigs[rid] = agentConfig;
-            persistence.createWithAssociation(roomAgentData, assoc);
-        } else {
-            roomAgentData.roomAgentConfigs[rid] = agentConfig;
-            const updatedData = {
-                ... persistentData,
-                roomAgentData,
-            };
-            await persistence.updateByAssociation(assoc, updatedData, true);
-        }
+        const data = {
+            roomAgentConfigs: {
+                [rid]: agentConfig,
+            },
+        };
+
+        await updatePersistentData(read, persistence, assoc, data);
     } catch (e) {
         throw new Error(e);
     }

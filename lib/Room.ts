@@ -40,6 +40,10 @@ export const closeChat = async (modify: IModify, read: IRead, rid: string, persi
     const room: ILivechatRoom = (await read.getRoomReader().getById(rid)) as ILivechatRoom;
     if (!room) { throw new Error(Logs.INVALID_ROOM_ID); }
 
+    if (!room.isOpen) {
+        return;
+    }
+
     if (!room.servedBy) { throw new Error(Logs.EMPTY_BOT_USERNAME_SETTING); }
 
     const DialogflowBotUsername = room.servedBy.username;

@@ -1,10 +1,14 @@
 import { IHttp, IModify, IPersistence, IRead } from '@rocket.chat/apps-engine/definition/accessors';
+import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { IJobContext, IProcessor } from '@rocket.chat/apps-engine/definition/scheduler';
 import { AppSetting } from '../config/Settings';
-import { DialogflowRequestType, IDialogflowMessage, LanguageCode } from '../enum/Dialogflow';
+import { DialogflowRequestType, LanguageCode } from '../enum/Dialogflow';
+import { Logs } from '../enum/Logs';
+import { Global } from '../Global';
+import { getError } from '../lib/Helper';
 import { Dialogflow } from './Dialogflow';
-import { createDialogflowMessage } from './Message';
-import { getRoomAssoc, retrieveDataByAssociation } from './Persistence';
+import { handleResponse } from './payloadAction';
+import { getRoomAssoc, retrieveDataByAssociation, setIsProcessingMessage } from './Persistence';
 import { getLivechatAgentConfig } from './Settings';
 
 export class EventScheduler implements IProcessor {
@@ -14,16 +18,29 @@ export class EventScheduler implements IProcessor {
         this.id = id;
     }
 
-    public async processor(jobContext: IJobContext, read: IRead, modify: IModify, http: IHttp, persis: IPersistence): Promise<void> {
+    public async processor(jobContext: IJobContext, read: IRead, modify: IModify, http: IHttp, persistence: IPersistence): Promise<void> {
+        const sessionId = jobContext.rid;
+        try {
+            const data = await retrieveDataByAssociation(read, getRoomAssoc(sessionId));
+            const defaultLanguageCode = await getLivechatAgentConfig(read, sessionId, AppSetting.DialogflowAgentDefaultLanguage);
 
-        const data = await retrieveDataByAssociation(read, getRoomAssoc(jobContext.rid));
+            const event = { name: jobContext.eventName, languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN, parameters: {} };
+            const response = await Dialogflow.sendRequest(http, read, modify, sessionId, event, DialogflowRequestType.EVENT);
 
-        const defaultLanguageCode = await getLivechatAgentConfig(read, jobContext.rid, AppSetting.DialogflowAgentDefaultLanguage);
+            const livechatRoom = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
+            if (!livechatRoom) { throw new Error(Logs.INVALID_ROOM_ID); }
 
-        const event = { name: jobContext.eventName, languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN, parameters: {} };
-        const response = await Dialogflow.sendRequest(http, read, modify, jobContext.rid, event, DialogflowRequestType.EVENT);
+            const { visitor: { token: visitorToken } } = livechatRoom;
 
-        await createDialogflowMessage(jobContext.rid, read, modify, response);
+            // Close blackout window after event is sent
+            await setIsProcessingMessage(persistence, sessionId, false);
+
+            await handleResponse(Global.app, read, modify, http, persistence, sessionId, visitorToken, response);
+        } catch (error) {
+            // Failed to send event, so close blackout window
+            await setIsProcessingMessage(persistence, sessionId, false);
+            console.error(`${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${sessionId} } ${getError(error)}`);
+        }
 
     }
 }

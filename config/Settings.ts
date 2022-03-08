@@ -79,6 +79,7 @@ const agentConfigTemplate = JSON.stringify(
             session_maintenance_interval: '5 minutes',
             session_maintenance_event_name: 'session_maintenance',
             dialogflow_disable_composer_on_trigger_event: false,
+            dialogflow_file_attachment_event_name: 'invalidUserInput',
         },
     }], null, '\t');
 

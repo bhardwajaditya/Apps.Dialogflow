@@ -15,7 +15,7 @@ import { getIsProcessingMessage, getRoomAssoc, retrieveDataByAssociation, setIsP
 import { handleParameters } from '../lib/responseParameters';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { cancelAllEventSchedulerJobForSession, cancelAllSessionMaintenanceJobForSession } from '../lib/Scheduler';
-import { sendEventToDialogFlow } from '../lib/sentEventToDialogFlow';
+import { sendEventToDialogFlow } from '../lib/sendEventToDialogFlow';
 import { agentConfigExists, getLivechatAgentConfig } from '../lib/Settings';
 import { incFallbackIntentAndSendResponse, resetFallbackIntent } from '../lib/SynchronousHandover';
 import { handleTimeout } from '../lib/Timeout';
@@ -78,13 +78,14 @@ export class PostMessageSentHandler {
             }
         }
 
-        if (!text || (text && text.trim().length === 0)) {
-            return;
-        }
-
         if (file && sender.username === visitorUsername) {
             const fileAttachmentEventName: string = await getLivechatAgentConfig(this.read, rid, AppSetting.DialogflowFileAttachmentEventName);
             await sendEventToDialogFlow(this.app, this.read, this.modify, this.persistence, this.http, rid, fileAttachmentEventName);
+            return;
+        }
+
+        if (!text || (text && text.trim().length === 0)) {
+            return;
         }
 
         if (!text || editedAt) {
@@ -97,7 +98,7 @@ export class PostMessageSentHandler {
 
         await handleTimeout(this.app, this.message, this.read, this.http, this.persistence, this.modify);
 
-        if (sender.username === servedBy.username) {
+        if (sender.username === servedBy.username || sender.username !== visitorUsername || await(agentConfigExists(this.read, sender.username))) {
             return;
         }
 

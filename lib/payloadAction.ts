@@ -6,7 +6,8 @@ import { ActionIds } from '../enum/ActionIds';
 import {  DialogflowRequestType, IDialogflowAction, IDialogflowImageCard, IDialogflowMessage, IDialogflowPayload, IDialogflowQuickReplies, LanguageCode} from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
 import { JobName } from '../enum/Scheduler';
-import { getRoomAssoc, retrieveDataByAssociation } from '../lib/Persistence';
+import { getError } from '../lib/Helper';
+import { getRoomAssoc, retrieveDataByAssociation, setIsProcessingMessage, updatePersistentData } from '../lib/Persistence';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
 import { Dialogflow } from './Dialogflow';
@@ -42,20 +43,20 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                     }
                     await performHandover(app, modify, read, rid, visitorToken, targetDepartment);
                 } else if (actionName === ActionIds.CLOSE_CHAT) {
-                    const room = await read.getRoomReader().getById(rid) as ILivechatRoom;
-                    if (room && room.isOpen) {
+                    const livechatRoom = await read.getRoomReader().getById(rid) as ILivechatRoom;
+                    if (livechatRoom && livechatRoom.isOpen) {
                         await closeChat(modify, read, rid);
                     }
                 } else if (actionName === ActionIds.NEW_WELCOME_EVENT) {
                     const livechatRoom = await read.getRoomReader().getById(rid) as ILivechatRoom;
-                    if (!livechatRoom) { throw new Error(); }
+                    if (!livechatRoom) { throw new Error(Logs.INVALID_ROOM_ID); }
                     const { visitor: { livechatData } } = livechatRoom;
                     await sendWelcomeEventToDialogFlow(app, read, modify, persistence, http, rid, visitorToken, livechatData);
                 } else if (actionName === ActionIds.SET_TIMEOUT) {
 
                     const task = {
                         id: JobName.EVENT_SCHEDULER,
-                        when: `${Number(params.time)} seconds`,
+                        when: new Date(new Date().getTime() + Number(params.time) * 1000),
                         data: {
                             eventName: params.eventName ,
                             rid,
@@ -66,7 +67,13 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
 
                     try {
                         await modify.getScheduler().scheduleOnce(task);
+
+                        // Start blackout window
+                        if (params.continue_blackout) {
+                            await setIsProcessingMessage(persistence, rid, true);
+                        }
                     } catch (error) {
+                        console.error(error);
                         const serviceUnavailable: string = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
                         await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
                         return;
@@ -76,13 +83,8 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                     const assoc = getRoomAssoc(rid);
                     const data = await retrieveDataByAssociation(read, assoc);
 
-                    if (data && data.custom_languageCode) {
-                        if (data.custom_languageCode !== params.newLanguageCode) {
-                            await persistence.updateByAssociation(assoc, {custom_languageCode: params.newLanguageCode});
-                            sendChangeLanguageEvent(app, read, modify, persistence, rid, http, params.newLanguageCode);
-                        }
-                    } else {
-                        await persistence.createWithAssociation({custom_languageCode: params.newLanguageCode}, assoc);
+                    if (data.custom_languageCode !== params.newLanguageCode) {
+                        await updatePersistentData(read, persistence, assoc, {custom_languageCode: params.newLanguageCode});
                         sendChangeLanguageEvent(app, read, modify, persistence, rid, http, params.newLanguageCode);
                     }
                 }
@@ -99,7 +101,7 @@ const sendChangeLanguageEvent = async (app: IApp, read: IRead, modify: IModify, 
 
         await createDialogflowMessage(rid, read, modify, response, app);
       } catch (error) {
-
+        console.error(`${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${rid} } ${getError(error)}`);
         const serviceUnavailable: string = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
         await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
         return;

@@ -22,7 +22,12 @@ class DialogflowClass {
                              requestType: DialogflowRequestType): Promise<any> {
 
         const room = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
-        const { id: rid, visitor: { livechatData, token: visitorToken  } } = room;
+        const { id: rid, visitor: { livechatData, token: visitorToken, phone } } = room;
+        let { visitor: { username } } = room;
+
+        if (phone && phone.length > 0) {
+            username = phone[0].phoneNumber;
+        }
 
         const serverURL = await this.getServerURL(read, modify, http, sessionId);
 
@@ -42,7 +47,7 @@ class DialogflowClass {
             const queryParams = {
                 timeZone: 'America/Los_Angeles',
                 parameters:  {
-                    username: room.visitor.username,
+                    username,
                     roomId: rid,
                     visitorToken,
                     ...(livechatData || {}),

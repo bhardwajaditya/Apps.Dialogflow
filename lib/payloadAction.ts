@@ -3,16 +3,17 @@ import { IApp } from '@rocket.chat/apps-engine/definition/IApp';
 import { ILivechatRoom } from '@rocket.chat/apps-engine/definition/livechat';
 import { AppSetting } from '../config/Settings';
 import { ActionIds } from '../enum/ActionIds';
-import {  DialogflowRequestType, IDialogflowAction, IDialogflowImageCard, IDialogflowMessage, IDialogflowPayload, IDialogflowQuickReplies, LanguageCode} from '../enum/Dialogflow';
+import {  DialogflowRequestType, IDialogflowAction, IDialogflowCustomFields, IDialogflowImageCard, IDialogflowMessage, IDialogflowPayload, IDialogflowQuickReplies, LanguageCode} from '../enum/Dialogflow';
 import { Logs } from '../enum/Logs';
 import { JobName } from '../enum/Scheduler';
 import { getError } from '../lib/Helper';
 import { getRoomAssoc, retrieveDataByAssociation, setIsProcessingMessage, updatePersistentData } from '../lib/Persistence';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
-import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
 import { getLivechatAgentConfig } from './Settings';
+
+export const WELCOME_EVENT_NAME =  'Welcome';
 
 export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IModify, http: IHttp, persistence: IPersistence, rid: string, visitorToken: string, dialogflowMessage: IDialogflowMessage) => {
     const { messages = [] } = dialogflowMessage;
@@ -130,5 +131,31 @@ export const  handleResponse = async (app: IApp, read: IRead,  modify: IModify, 
         } else {
             await createDialogflowMessage(rid, read, modify, messagesToProcess, app);
         }
+    }
+};
+
+export const sendWelcomeEventToDialogFlow = async (app: IApp, read: IRead, modify: IModify, persistence: IPersistence, http: IHttp, rid: string, visitorToken: string, livechatData: any) => {
+    try {
+        const data = await retrieveDataByAssociation(read, getRoomAssoc(rid));
+        const defaultLanguageCode = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowAgentDefaultLanguage);
+        const event = {
+            name: WELCOME_EVENT_NAME,
+            languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN,
+            parameters: {...(livechatData || {}), roomId: rid, visitorToken} || {},
+        };
+        const disableInput: IDialogflowCustomFields = {
+            disableInput: true,
+            disableInputMessage: 'Starting chat...',
+            displayTyping: true,
+        };
+
+        await createMessage(rid, read, modify, { customFields: disableInput }, app);
+        const response: IDialogflowMessage = await Dialogflow.sendRequest(http, read, modify, rid, event, DialogflowRequestType.EVENT);
+        await handleResponse(app, read, modify, http, persistence, rid, visitorToken, response);
+    } catch (error) {
+        console.error(`${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${rid} } ${getError(error)}`);
+        const serviceUnavailable: string = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
+        await createMessage(rid, read, modify, { text: serviceUnavailable }, app);
+        return;
     }
 };

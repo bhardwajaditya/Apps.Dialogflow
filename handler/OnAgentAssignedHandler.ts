@@ -5,9 +5,9 @@ import { RoomType } from '@rocket.chat/apps-engine/definition/rooms';
 import { AppSetting, DefaultMessage } from '../config/Settings';
 import { IDialogflowCustomFields } from '../enum/Dialogflow';
 import { createMessage } from '../lib/Message';
+import { sendWelcomeEventToDialogFlow } from '../lib/payloadAction';
 import { assignPersistentAgentConfigToRoom } from '../lib/Persistence';
 import { updateRoomCustomFields } from '../lib/Room';
-import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
 import { agentConfigExists, getLivechatAgentConfig } from '../lib/Settings';
 
 export class OnAgentAssignedHandler {

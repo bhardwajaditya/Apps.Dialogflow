@@ -10,9 +10,8 @@ import { getError } from '../lib/Helper';
 import { createHttpResponse } from '../lib/Http';
 import { createDialogflowMessage } from '../lib/Message';
 import { handleResponse } from '../lib/payloadAction';
-// import { handlePayloadActions } from '../lib/payloadAction';
+import { sendWelcomeEventToDialogFlow, WELCOME_EVENT_NAME } from '../lib/payloadAction';
 import { closeChat, performHandover } from '../lib/Room';
-import { sendWelcomeEventToDialogFlow, WELCOME_EVENT_NAME } from '../lib/sendWelcomeEvent';
 
 export class IncomingEndpoint extends ApiEndpoint {
     public path = 'incoming';

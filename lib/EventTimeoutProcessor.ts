@@ -8,7 +8,7 @@ import { Global } from '../Global';
 import { getError } from '../lib/Helper';
 import { Dialogflow } from './Dialogflow';
 import { handleResponse } from './payloadAction';
-import { getRoomAssoc, retrieveDataByAssociation, setIsProcessingMessage } from './Persistence';
+import { getQueuedMessage, getRoomAssoc, retrieveDataByAssociation, setIsProcessingMessage, setIsQueueWindowActive, setQueuedMessage } from './Persistence';
 import { getLivechatAgentConfig } from './Settings';
 
 export class EventScheduler implements IProcessor {
@@ -33,12 +33,30 @@ export class EventScheduler implements IProcessor {
             const { visitor: { token: visitorToken } } = livechatRoom;
 
             // Close blackout window after event is sent
-            await setIsProcessingMessage(persistence, sessionId, false);
+            await setIsProcessingMessage(read, persistence, sessionId, false);
 
+            // Handle Queue Window
+            const queuedMessage = await getQueuedMessage(read, sessionId);
+
+            await setIsQueueWindowActive(read, persistence, sessionId, false);
+            await setQueuedMessage(read, persistence, sessionId, '');
+            console.error(`Queue Window closed`);
+
+            // Handling response after closing previous window so that we can start new window if any properly
             await handleResponse(Global.app, read, modify, http, persistence, sessionId, visitorToken, response);
+
+            // Send Queued Message
+            if (queuedMessage) {
+                try {
+                    const messageResponse = await Dialogflow.sendRequest(http, read, modify, sessionId, queuedMessage, DialogflowRequestType.MESSAGE);
+                    await handleResponse(Global.app, read, modify, http, persistence, sessionId, visitorToken, messageResponse);
+                } catch (error) {
+                    console.error(`${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${sessionId} } ${getError(error)}`);
+                }
+            }
         } catch (error) {
             // Failed to send event, so close blackout window
-            await setIsProcessingMessage(persistence, sessionId, false);
+            await setIsProcessingMessage(read, persistence, sessionId, false);
             console.error(`${Logs.DIALOGFLOW_REST_API_ERROR}: { roomID: ${sessionId} } ${getError(error)}`);
         }
 

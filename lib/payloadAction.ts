@@ -7,7 +7,7 @@ import {  DialogflowRequestType, IDialogflowAction, IDialogflowImageCard, IDialo
 import { Logs } from '../enum/Logs';
 import { JobName } from '../enum/Scheduler';
 import { getError } from '../lib/Helper';
-import { getRoomAssoc, retrieveDataByAssociation, setIsProcessingMessage, updatePersistentData } from '../lib/Persistence';
+import { getRoomAssoc, retrieveDataByAssociation, setIsProcessingMessage, setIsQueueWindowActive, setQueuedMessage, updatePersistentData } from '../lib/Persistence';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { sendWelcomeEventToDialogFlow } from '../lib/sendWelcomeEvent';
 import { Dialogflow } from './Dialogflow';
@@ -70,7 +70,18 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
 
                         // Start blackout window
                         if (params.continue_blackout) {
-                            await setIsProcessingMessage(persistence, rid, true);
+                            await setIsProcessingMessage(read, persistence, rid, true);
+                        }
+
+                        // Handle queue window with drop_queue parameter
+                        if (params.drop_queue) {
+                            await setIsQueueWindowActive(read, persistence, rid, false);
+                            await setQueuedMessage(read, persistence, rid, '');
+                            console.debug('Queue Window dropped');
+                        } else {
+                            // Start queue window
+                            await setIsQueueWindowActive(read, persistence, rid, true);
+                            console.debug(`Queue Window started`);
                         }
                     } catch (error) {
                         console.error(error);

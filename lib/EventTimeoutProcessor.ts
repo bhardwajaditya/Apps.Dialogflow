@@ -25,6 +25,11 @@ export class EventScheduler implements IProcessor {
             const defaultLanguageCode = await getLivechatAgentConfig(read, sessionId, AppSetting.DialogflowAgentDefaultLanguage);
 
             const event = { name: jobContext.eventName, languageCode: data.custom_languageCode || defaultLanguageCode || LanguageCode.EN, parameters: {} };
+
+            // Start queue window
+            await setIsQueueWindowActive(read, persistence, sessionId, true);
+            console.debug(`Queue Window started`);
+
             const response = await Dialogflow.sendRequest(http, read, modify, sessionId, event, DialogflowRequestType.EVENT);
 
             const livechatRoom = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
@@ -35,15 +40,14 @@ export class EventScheduler implements IProcessor {
             // Close blackout window after event is sent
             await setIsProcessingMessage(read, persistence, sessionId, false);
 
-            // Handle Queue Window
+            // Handling response after closing previous window so that we can start new window if any properly
+            await handleResponse(Global.app, read, modify, http, persistence, sessionId, visitorToken, response);
+
             const queuedMessage = await getQueuedMessage(read, sessionId);
 
             await setIsQueueWindowActive(read, persistence, sessionId, false);
             await setQueuedMessage(read, persistence, sessionId, '');
-            console.error(`Queue Window closed`);
-
-            // Handling response after closing previous window so that we can start new window if any properly
-            await handleResponse(Global.app, read, modify, http, persistence, sessionId, visitorToken, response);
+            console.debug(`Queue Window closed`);
 
             // Send Queued Message
             if (queuedMessage) {

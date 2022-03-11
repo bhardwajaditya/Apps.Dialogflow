@@ -73,15 +73,11 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                             await setIsProcessingMessage(read, persistence, rid, true);
                         }
 
-                        // Handle queue window with drop_queue parameter
+                        // Handle drop_queue parameter for queue window
                         if (params.drop_queue) {
                             await setIsQueueWindowActive(read, persistence, rid, false);
                             await setQueuedMessage(read, persistence, rid, '');
                             console.debug('Queue Window dropped');
-                        } else {
-                            // Start queue window
-                            await setIsQueueWindowActive(read, persistence, rid, true);
-                            console.debug(`Queue Window started`);
                         }
                     } catch (error) {
                         console.error(error);

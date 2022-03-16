@@ -72,13 +72,6 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                         if (params.continue_blackout) {
                             await setIsProcessingMessage(read, persistence, rid, true);
                         }
-
-                        // Handle drop_queue parameter for queue window
-                        if (params.drop_queue) {
-                            await setIsQueueWindowActive(read, persistence, rid, false);
-                            await setQueuedMessage(read, persistence, rid, '');
-                            console.debug('Queue Window dropped');
-                        }
                     } catch (error) {
                         console.error(error);
                         const serviceUnavailable: string = await getLivechatAgentConfig(read, rid, AppSetting.DialogflowServiceUnavailableMessage);
@@ -94,6 +87,10 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                         await updatePersistentData(read, persistence, assoc, {custom_languageCode: params.newLanguageCode});
                         sendChangeLanguageEvent(app, read, modify, persistence, rid, http, params.newLanguageCode);
                     }
+                } else if (actionName === ActionIds.DROP_QUEUE) {
+                    await setIsQueueWindowActive(read, persistence, rid, false);
+                    await setQueuedMessage(read, persistence, rid, '');
+                    console.debug({rid}, 'Queue Window dropped');
                 }
             }
         }

@@ -28,7 +28,7 @@ export class EventScheduler implements IProcessor {
 
             // Start queue window
             await setIsQueueWindowActive(read, persistence, sessionId, true);
-            console.debug(`Queue Window started`);
+            console.debug({rid: sessionId}, `Queue Window started`);
 
             const response = await Dialogflow.sendRequest(http, read, modify, sessionId, event, DialogflowRequestType.EVENT);
 
@@ -47,7 +47,7 @@ export class EventScheduler implements IProcessor {
 
             await setIsQueueWindowActive(read, persistence, sessionId, false);
             await setQueuedMessage(read, persistence, sessionId, '');
-            console.debug(`Queue Window closed`);
+            console.debug({rid: sessionId}, `Queue Window closed`);
 
             // Send Queued Message
             if (queuedMessage) {

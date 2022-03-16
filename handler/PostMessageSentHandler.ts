@@ -117,7 +117,7 @@ export class PostMessageSentHandler {
         const isQueueWindowActive = await getIsQueueWindowActive(this.read, rid);
 
         if (isQueueWindowActive) {
-            console.debug(`Queue Window is active. So storing this message with id ${this.message.id} ${this.message.text}`);
+            console.debug({rid}, `Queue Window is active. So storing this message with id ${this.message.id} ${this.message.text}`);
             await setQueuedMessage(this.read, this.persistence, rid, this.message.text ?? '');
             return;
         }

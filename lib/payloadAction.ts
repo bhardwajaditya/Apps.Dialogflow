@@ -7,7 +7,7 @@ import {  DialogflowRequestType, IDialogflowAction, IDialogflowCustomFields, IDi
 import { Logs } from '../enum/Logs';
 import { JobName } from '../enum/Scheduler';
 import { getError } from '../lib/Helper';
-import { getRoomAssoc, retrieveDataByAssociation, setIsProcessingMessage, updatePersistentData } from '../lib/Persistence';
+import { getRoomAssoc, retrieveDataByAssociation, setIsProcessingMessage, setIsQueueWindowActive, setQueuedMessage, updatePersistentData } from '../lib/Persistence';
 import { closeChat, performHandover, updateRoomCustomFields } from '../lib/Room';
 import { Dialogflow } from './Dialogflow';
 import { createDialogflowMessage, createMessage } from './Message';
@@ -71,7 +71,7 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
 
                         // Start blackout window
                         if (params.continue_blackout) {
-                            await setIsProcessingMessage(persistence, rid, true);
+                            await setIsProcessingMessage(read, persistence, rid, true);
                         }
                     } catch (error) {
                         console.error(error);
@@ -88,6 +88,10 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                         await updatePersistentData(read, persistence, assoc, {custom_languageCode: params.newLanguageCode});
                         sendChangeLanguageEvent(app, read, modify, persistence, rid, http, params.newLanguageCode);
                     }
+                } else if (actionName === ActionIds.DROP_QUEUE) {
+                    await setIsQueueWindowActive(read, persistence, rid, false);
+                    await setQueuedMessage(read, persistence, rid, '');
+                    console.debug({rid}, 'Queue Window dropped');
                 }
             }
         }

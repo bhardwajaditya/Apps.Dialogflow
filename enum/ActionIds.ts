@@ -4,4 +4,5 @@ export enum ActionIds {
     NEW_WELCOME_EVENT = 'new_welcome_event',
     SET_TIMEOUT = 'df_set_timeout',
     CHANGE_LANGUAGE_CODE = 'change_language_code',
+    DROP_QUEUE = 'drop_queue',
 }

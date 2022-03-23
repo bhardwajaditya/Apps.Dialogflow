@@ -23,6 +23,7 @@ class DialogflowClass {
 
         const room = await read.getRoomReader().getById(sessionId) as ILivechatRoom;
         const { id: rid, visitor: { livechatData, token: visitorToken, phone } } = room;
+        const appVersion = room.customFields ? room.customFields.appVersion : 'undefined';
         let { visitor: { username } } = room;
 
         if (phone && phone.length > 0) {
@@ -50,6 +51,7 @@ class DialogflowClass {
                     username,
                     roomId: rid,
                     visitorToken,
+                    appVersion,
                     ...(livechatData || {}),
                 },
             };

@@ -14,13 +14,6 @@ export const getServerSettingValue = async (read: IRead, id: string) => {
 export const getLivechatAgentConfig = async (read: IRead, sessionId: string, type?: string) => {
 
     try {
-        const persistentAgentConfig = await getPersistentAgentConfigToRoom(read, sessionId);
-        if (persistentAgentConfig) {
-            if (type) {
-                return persistentAgentConfig[type];
-            }
-            return persistentAgentConfig;
-        }
 
         const dialogflowBotList = JSON.parse(await getAppSettingValue(read, AppSetting.DialogflowBotList));
         const room = await read.getRoomReader().getById(sessionId) as any;

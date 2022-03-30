@@ -38,6 +38,9 @@ export const  handlePayloadActions = async (app: IApp, read: IRead,  modify: IMo
                         if (params.customDetail) {
                             customFields.customDetail = params.customDetail;
                         }
+                        if (params.prechatDetails) {
+                            customFields.prechatDetails = params.prechatDetails;
+                        }
                         const livechatRoom = await read.getRoomReader().getById(rid) as ILivechatRoom;
                         if (livechatRoom.customFields) {
                             customFields.appVersion = livechatRoom.customFields.appVersion;
